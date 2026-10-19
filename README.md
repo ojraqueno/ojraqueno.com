@@ -31,7 +31,7 @@ Edit posts in the Keystatic UI, save, then commit the `.mdoc` files like normal 
 
 ## Deploy
 
-**Cloudflare Pages** — see `DEPLOY.md` for Git connect, build settings, and Namecheap → Cloudflare DNS.
+**Cloudflare Workers (static assets)** — see `DEPLOY.md`. Output dir is in `wrangler.toml`; set `NODE_VERSION=22` in the dashboard.
 
 `astro.config.mjs` sets `site` to `https://ojraqueno.com`.
 

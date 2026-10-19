@@ -1,42 +1,39 @@
-# Deploy ojraqueno.com on Cloudflare Pages
+# Deploy ojraqueno.com on Cloudflare
 
-## 1. GitHub (done when this repo is pushed)
+Cloudflare now steers new Git deploys through **Workers** (static assets via Wrangler), not the classic Pages “output directory” form. That is fine for this Astro site.
 
-Repo should be public or private on your GitHub account.
+## Dashboard settings (Workers + Git)
 
-## 2. Create the Pages project
+| Field | Value |
+| --- | --- |
+| Project name | `ojraqueno-com` (or similar) |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Preview command | `npx wrangler preview` (default is fine) |
+| Path (advanced) | `/` |
 
-1. Sign up / log in at [dash.cloudflare.com](https://dash.cloudflare.com)
-2. **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
-3. Authorize Cloudflare for GitHub and select this repository
-4. Build settings:
-   - **Framework preset:** Astro (or None)
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-   - **Root directory:** `/` (leave default)
-   - **Environment variable:** `NODE_VERSION` = `22`
-5. Save and deploy — you’ll get a `*.pages.dev` URL first
+**Output directory:** not in the UI — it lives in `wrangler.toml` as `[assets] directory = "./dist"`.
 
-## 3. Point ojraqueno.com at Cloudflare (Namecheap)
+**Env var** (scroll to Advanced → Variable name / value):
 
-**Recommended:** use Cloudflare DNS (full setup).
+| Name | Value |
+| --- | --- |
+| `NODE_VERSION` | `22` |
 
-1. In Cloudflare, **Add a site** → enter `ojraqueno.com`
-2. Choose the **Free** plan
-3. Cloudflare shows two **nameservers** (e.g. `ada.ns.cloudflare.com`)
-4. In [Namecheap](https://www.namecheap.com) → Domain List → **Manage** `ojraqueno.com` → **Nameservers** → **Custom DNS**
-5. Paste Cloudflare’s two nameservers → Save  
-   Propagation can take from minutes up to ~24–48 hours (often under an hour)
-6. Back in Cloudflare, wait until the domain status is **Active**
-7. Pages project → **Custom domains** → add `ojraqueno.com` and `www.ojraqueno.com`  
-   Cloudflare will create the DNS records and issue HTTPS
+Then click **Deploy**.
 
-### Alternative (keep Namecheap DNS)
+## Custom domain (Namecheap → Cloudflare)
 
-Only if you don’t want to move nameservers: in Pages → Custom domains, follow Cloudflare’s instructions and add the exact A/CNAME records they show under Namecheap → **Advanced DNS**. Apex domains are harder this way; nameserver move is simpler.
+1. Cloudflare → **Add a site** → `ojraqueno.com` (Free plan)
+2. Copy the two Cloudflare **nameservers**
+3. Namecheap → Manage → **Nameservers** → **Custom DNS** → paste → Save
+4. When the domain is **Active**, open the Worker → **Settings** / **Domains & Routes** (or Custom domains) → add `ojraqueno.com` and `www`
 
-## 4. After it works
+## Local deploy (optional)
 
-- Visit `https://ojraqueno.com`
-- Set LinkedIn / GitHub website to that URL
-- Each push to `main` redeploys automatically
+```bash
+npm run build
+npx wrangler deploy
+```
+
+(Requires `wrangler login` once.)
