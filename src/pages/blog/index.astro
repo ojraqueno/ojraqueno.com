@@ -1,0 +1,47 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf(),
+);
+
+const dateFormatter = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+---
+
+<BaseLayout
+  title="Blog"
+  description="Posts on .NET, software design, Azure, and shipping adaptable systems."
+>
+  <h1 class="page-title">Blog</h1>
+  <p class="page-lede">
+    How-tos and design notes for .NET and full-stack work — including older posts
+    migrated from Blogger with their original dates.
+  </p>
+
+  <ul class="post-list">
+    {
+      posts.map((post) => (
+        <li class="post-item">
+          <a href={`/blog/${post.id}/`}>
+            <p class="post-meta">
+              <time datetime={post.data.publishedAt.toISOString()}>
+                {dateFormatter.format(post.data.publishedAt)}
+              </time>
+              {post.data.originalUrl && <span>Migrated from Blogger</span>}
+              {post.data.tags.slice(0, 3).map((tag) => (
+                <span class="tag">{tag}</span>
+              ))}
+            </p>
+            <h3>{post.data.title}</h3>
+            <p>{post.data.description}</p>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</BaseLayout>

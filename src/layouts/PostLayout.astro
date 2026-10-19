@@ -1,0 +1,71 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  publishedAt: Date;
+  updatedAt?: Date;
+  tags?: string[];
+  githubRepo?: string;
+  originalUrl?: string;
+}
+
+const {
+  title,
+  description,
+  publishedAt,
+  updatedAt,
+  tags = [],
+  githubRepo,
+  originalUrl,
+} = Astro.props;
+
+const dateFormatter = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="section prose">
+    <header>
+      <p class="post-meta">
+        <time datetime={publishedAt.toISOString()}>
+          {dateFormatter.format(publishedAt)}
+        </time>
+        {
+          updatedAt && (
+            <span>Updated {dateFormatter.format(updatedAt)}</span>
+          )
+        }
+        {tags.map((tag) => <span class="tag">{tag}</span>)}
+      </p>
+      <h1 class="page-title">{title}</h1>
+      <p class="page-lede">{description}</p>
+      {
+        originalUrl && (
+          <p class="migrated-note">
+            This post first appeared on Blogger on{' '}
+            {dateFormatter.format(publishedAt)}.{" "}
+            <a href={originalUrl} rel="noopener noreferrer">
+              View the original
+            </a>
+            .
+          </p>
+        )
+      }
+      {
+        githubRepo && (
+          <p>
+            <a class="button button-ghost" href={githubRepo} rel="noopener noreferrer">
+              Companion repo
+            </a>
+          </p>
+        )
+      }
+    </header>
+    <slot />
+  </article>
+</BaseLayout>

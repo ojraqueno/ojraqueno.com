@@ -1,0 +1,62 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  path?: string;
+}
+
+const {
+  title,
+  description = 'Software design, .NET, and practical engineering notes from OJ Raqueño.',
+  path = Astro.url.pathname,
+} = Astro.props;
+
+const pageTitle = title === 'OJ Raqueño' ? title : `${title} · OJ Raqueño`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={new URL(path, Astro.site)} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:ital,wght@0,400;0,560;0,650;1,400&family=Syne:wght@650;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>{pageTitle}</title>
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header">
+        <a class="brand" href="/">OJ <span>Raqueño</span></a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/blog" aria-current={path.startsWith('/blog') ? 'page' : undefined}
+            >Blog</a
+          >
+          <a href="/about" aria-current={path === '/about' ? 'page' : undefined}
+            >About</a
+          >
+          <a href="https://github.com/ojraqueno" rel="noopener noreferrer"
+            >GitHub</a
+          >
+        </nav>
+      </header>
+
+      <slot />
+
+      <footer class="site-footer">
+        <p>
+          OJ Raqueño — notes on software design, .NET, and shipping usable systems.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

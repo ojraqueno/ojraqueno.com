@@ -1,0 +1,124 @@
+---
+title: Web API Without Controller
+description: >-
+  Experimenting with mapping ASP.NET Core routes directly to handlers —
+  thin controllers taken to the extreme.
+publishedAt: 2020-11-04
+draft: false
+tags:
+  - asp.net-core
+  - web-api
+  - design
+githubRepo: https://github.com/ojraqueno/web-api-without-controller
+originalUrl: https://ojdevelops.blogspot.com/2020/11/web-api-without-controller.html
+---
+
+If the mantra of "thin controllers, fat models" is followed to the extreme, it would result in very short controller methods, sometimes even only a couple of lines long. Today I am experimenting with doing away with controllers entirely, and just mapping routes directly to methods that execute the business logic.
+
+The code in this post can be found in: https://github.com/ojraqueno/web-api-without-controller
+
+## Setting Up the New Project
+
+First, I created the web API project template using `dotnet new`:
+
+```
+dotnet new webapi -n ControllerLessWebAPI
+```
+
+That will create a new API project for me inside the ControllerLessWebAPI folder.
+
+I can run that project by going into the directory and running `dotnet run`:
+
+```
+dotnet run
+```
+
+It will start the website, which in my case is located in localhost port 5001. If I go to `https://localhost:5001/weatherforecast`, I can see some random JSON data being returned.
+
+## Removing the Controller
+
+The starter template contains a `WeatherController` class which is responsible for returning the hardcoded JSON data. We can tell the app not to use the controller for routing by removing the relevant line in `Startup.cs`:
+
+```csharp
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+    if (env.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage();
+    }
+
+    app.UseHttpsRedirection();
+    app.UseRouting();
+    app.UseAuthorization();
+
+    app.UseEndpoints(endpoints =>
+    {
+        //endpoints.MapControllers(); // remove this line
+    });
+}
+```
+
+## Using Our Own Route Handler
+
+We can use `app.UseEndpoints` to create our own route handling logic. The `endpoints` parameter in the lambda expression is of type `IEndpointRouteBuilder`, which contains methods we can use to map routes to handlers.
+
+We can use the `MapGet` method to map a GET request to the appropriate handler. Here is an example which mimics the logic of the `Get` method inside `WeatherController.cs`:
+
+```csharp
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapGet("/weatherforecast", async context =>
+    {
+        string[] summaries = new[]
+        {
+            "Freezing", "Bracing", "Chilly", "Cool", "Mild",
+            "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+        };
+
+        var rng = new Random();
+        var returnData = Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            {
+                Date = DateTime.Now.AddDays(index),
+                TemperatureC = rng.Next(-20, 55),
+                Summary = summaries[rng.Next(summaries.Length)]
+            })
+            .ToArray();
+        var jsonData = JsonSerializer.Serialize(returnData);
+
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(jsonData);
+    });
+});
+```
+
+That code will map the "/weatherforecast" route to the provided handler, which just returns some hardcoded JSON data.
+
+If we now go to `https://localhost:5001/weatherforecast` again, we can see that it behaves exactly like before.
+
+We just handled an API call without using a controller. Cool!
+
+## A Little Cleanup
+
+If we put all the route handling logic in `Startup.cs`, the code would quickly become difficult to maintain. But because the handlers themselves are just regular methods, they can be placed in other files.
+
+For example, we can create a class named `WeatherService` and copy the logic into a `Get` method on the class, then map routes from a dictionary:
+
+```csharp
+private static readonly Dictionary<string, RequestDelegate> getRouteHandlers =
+    new Dictionary<string, RequestDelegate>
+{
+    ["/weatherforecast"] = WeatherService.Get
+};
+
+app.UseEndpoints(endpoints =>
+{
+    foreach (var (route, handler) in getRouteHandlers)
+    {
+        endpoints.MapGet(route, handler);
+    }
+});
+```
+
+## Conclusion
+
+The starter project template for ASP.NET Core web applications already comes with controller classes to help us get up and running easily. In this post, we saw that we can create our own route handlers if we wanted to. This is also a small showcase of just how easily extensible and customizable the ASP.NET Core framework is.
