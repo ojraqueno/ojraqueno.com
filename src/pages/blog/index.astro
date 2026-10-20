@@ -28,17 +28,19 @@ const dateFormatter = new Intl.DateTimeFormat('en', {
       posts.map((post) => (
         <li class="post-item">
           <a href={`/blog/${post.id}/`}>
-            <p class="post-meta">
-              <time datetime={post.data.publishedAt.toISOString()}>
-                {dateFormatter.format(post.data.publishedAt)}
-              </time>
-              {post.data.originalUrl && <span>Migrated from Blogger</span>}
-              {post.data.tags.slice(0, 3).map((tag) => (
-                <span class="tag">{tag}</span>
-              ))}
-            </p>
-            <h3>{post.data.title}</h3>
-            <p>{post.data.description}</p>
+            <time datetime={post.data.publishedAt.toISOString()}>
+              {dateFormatter.format(post.data.publishedAt)}
+            </time>
+            <div>
+              <h3>{post.data.title}</h3>
+              <p>{post.data.description}</p>
+              <div class="tag-row">
+                {post.data.originalUrl && <span class="tag">From Blogger</span>}
+                {post.data.tags.slice(0, 3).map((tag) => (
+                  <span class="tag">{tag}</span>
+                ))}
+              </div>
+            </div>
           </a>
         </li>
       ))

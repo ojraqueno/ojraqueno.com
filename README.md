@@ -31,8 +31,8 @@ Edit posts in the Keystatic UI, save, then commit the `.mdoc` files like normal 
 
 ## Deploy
 
-**Cloudflare Workers (static assets)** — see `DEPLOY.md`. Output dir is in `wrangler.toml`; set `NODE_VERSION=22` in the dashboard.
+**Cloudflare Workers (static assets)** — see `DEPLOY.md`. Output dir is in `wrangler.toml`. Node version comes from `.node-version` (`24`); you can also set `NODE_VERSION=24` in the dashboard.
 
 `astro.config.mjs` sets `site` to `https://ojraqueno.com`.
 
-**Node:** Astro 5 on Node 22. Set `NODE_VERSION=22` in Pages (also have `.node-version`).
+**Node:** Active LTS (24). Local install via nvm-windows: `nvm use 24.22.0`.

@@ -18,7 +18,7 @@ Cloudflare now steers new Git deploys through **Workers** (static assets via Wra
 
 | Name | Value |
 | --- | --- |
-| `NODE_VERSION` | `22` |
+| `NODE_VERSION` | `24` |
 
 Then click **Deploy**.
 
