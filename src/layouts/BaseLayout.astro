@@ -28,15 +28,15 @@ const pageTitle = title === 'OJ Raqueño' ? title : `${title} · OJ Raqueño`;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:ital,wght@0,400;0,560;0,650;1,400&family=Syne:wght@650;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap"
       rel="stylesheet"
     />
     <title>{pageTitle}</title>
   </head>
   <body>
-    <div class="site-shell">
-      <header class="site-header">
-        <a class="brand" href="/">OJ <span>Raqueño</span></a>
+    <header class="site-header">
+      <div class="site-shell header-inner">
+        <a class="brand" href="/">OJ Raqueño</a>
         <nav class="nav" aria-label="Primary">
           <a href="/blog" aria-current={path.startsWith('/blog') ? 'page' : undefined}
             >Blog</a
@@ -48,14 +48,14 @@ const pageTitle = title === 'OJ Raqueño' ? title : `${title} · OJ Raqueño`;
             >GitHub</a
           >
         </nav>
-      </header>
+      </div>
+    </header>
 
+    <div class="site-shell">
       <slot />
 
       <footer class="site-footer">
-        <p>
-          OJ Raqueño — notes on software design, .NET, and shipping usable systems.
-        </p>
+        <p>OJ Raqueño · .NET, full-stack, and software design.</p>
       </footer>
     </div>
   </body>

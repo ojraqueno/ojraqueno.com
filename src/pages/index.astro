@@ -15,11 +15,10 @@ const dateFormatter = new Intl.DateTimeFormat('en', {
 
 <BaseLayout title="OJ Raqueño">
   <section class="hero">
-    <p class="hero-brand">OJ <span>Raqueño</span></p>
-    <h1>Software design notes you can ship with.</h1>
+    <p class="hero-kicker">.NET · full-stack · design</p>
+    <h1>Notes on software design.</h1>
     <p>
-      Practical .NET, full-stack, and architecture writing — with companion repos
-      when the idea needs code.
+      How-tos and design decisions, with companion repos when an idea needs code.
     </p>
     <div class="cta-row">
       <a class="button button-primary" href="/blog">Read the blog</a>
@@ -37,16 +36,18 @@ const dateFormatter = new Intl.DateTimeFormat('en', {
         posts.map((post) => (
           <li class="post-item">
             <a href={`/blog/${post.id}/`}>
-              <p class="post-meta">
-                <time datetime={post.data.publishedAt.toISOString()}>
-                  {dateFormatter.format(post.data.publishedAt)}
-                </time>
-                {post.data.tags.slice(0, 2).map((tag) => (
-                  <span class="tag">{tag}</span>
-                ))}
-              </p>
-              <h3>{post.data.title}</h3>
-              <p>{post.data.description}</p>
+              <time datetime={post.data.publishedAt.toISOString()}>
+                {dateFormatter.format(post.data.publishedAt)}
+              </time>
+              <div>
+                <h3>{post.data.title}</h3>
+                <p>{post.data.description}</p>
+                <div class="tag-row">
+                  {post.data.tags.slice(0, 2).map((tag) => (
+                    <span class="tag">{tag}</span>
+                  ))}
+                </div>
+              </div>
             </a>
           </li>
         ))
