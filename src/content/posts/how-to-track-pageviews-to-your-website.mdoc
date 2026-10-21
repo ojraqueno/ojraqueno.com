@@ -1,0 +1,50 @@
+---
+title: How to Track Pageviews to Your Website using Google Analytics
+description: >-
+  In this post I will be showing how to add page view tracking to a website using Google Analytics.
+publishedAt: 2016-09-26
+draft: false
+tags:
+  - seo
+originalUrl: https://ojdevelops.blogspot.com/2016/09/how-to-track-pageviews-to-your-website.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/734927ce7a34-how-to-track-pageviews-to-your-website-using-google-analytics.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/734927ce7a34-how-to-track-pageviews-to-your-website-using-google-analytics.jpg)
+
+In this post I will be showing how to add page view tracking to a website using Google Analytics.
+
+## Summary of Steps
+
+Here are the steps:
+
+1.  Sign up for Google Analytics using your Google account.
+2.  Get a tracking code from the Analytics page and use it on your website.
+
+## Sign up for Google Analytics
+
+Here are the steps to sign up for a Google Analytics account.
+
+1.  Go to the Google Analytics page at [https://analytics.google.com](https://analytics.google.com).
+2.  If you aren't already signed in, sign in using your Google account.
+3.  On the Google Analytics page, click Sign Up.
+4.  You will be taken to a "New Account" page, where you fill up some information about your website. Fill up all the information and click "Get Tracking ID".
+
+## Get a tracking code from the Analytics page and use it on your website
+
+Picking up where we left off earlier:
+
+1.  After clicking "Get Tracking ID", you will be taken to your Google Analytics dashboard.
+2.  Look for the Javascript code block and copy it. This code block is already configured and ready to use.
+3.  Copy and paste the code block into your application. Ideally, the tracking code would be on every page of your site, so what you can do is paste it on the master page (such as in `_Layout.cshtml`).
+4.  (Optional) It might also be a good idea to introduce a `web.config` switch setting, so that the tracking code can be disabled on the development environment and enabled on production.
+
+That's it! After a few hours, tracking data will be displayed on the Google Analytics dashboard page.
+
+## Viewing the Analytics Data
+
+If you're still on the Google Analytics page, click on the Reporting tab toward the top. This is the page with graphs and other tracking information about your site.
+
+The Reporting page will be the default page once you sign in, so if you already signed out, just sign again to see your page stats.
+
+## Conclusion
+
+In this post I showed how to enable page view tracking using Google Analytics.

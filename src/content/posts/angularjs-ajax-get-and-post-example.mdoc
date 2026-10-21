@@ -1,0 +1,272 @@
+---
+title: AngularJS AJAX GET and POST Example with ASP.NET MVC JsonResult
+description: >-
+  A while back I blogged about Using JQuery AJAX GET with ASP.NET MVC JsonResult . This time, we will be talking about using AngularJS for making GET and POST methods using the $http service.
+publishedAt: 2016-05-26
+draft: false
+tags:
+  - net
+  - ajax
+  - angularjs
+  - asp-net
+  - c-sharp
+  - json
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2016/05/angularjs-ajax-get-and-post-example.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/097f243424b6-angularjs-ajax-get-and-post-example-with-asp.net-mvc-jsonresult.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/097f243424b6-angularjs-ajax-get-and-post-example-with-asp.net-mvc-jsonresult.jpg)
+
+A while back I blogged about [Using JQuery AJAX GET with ASP.NET MVC JsonResult](/blog/using-jquery-ajax-get-with-aspnet-mvc/). This time, we will be talking about using AngularJS for making GET and POST methods using the `$http` service.
+
+## Server-Side Setup
+
+Let's use an `Employee` class with a few properties:
+
+```csharp
+
+public class Employee()
+{
+ public int Id { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+}
+```
+
+In the Home controller, let's add the following actions:
+
+```csharp
+
+public ActionResult GetEmployee(int id)
+{
+ Employee john = new Employee
+ {
+ Id = 1,
+ FirstName = "John",
+ LastName = "Smith"
+ };
+
+ return Json(new { employee = john }, JsonRequestBehavior.AllowGet);
+}
+
+public ActionResult GetEmployees()
+{
+ Employee john = new Employee
+ {
+ Id = 1,
+ FirstName = "John",
+ LastName = "Smith"
+ };
+
+ Employee jane = new Employee
+ {
+ Id = 2,
+ FirstName = "Jane",
+ LastName = "Doe"
+ };
+
+ List<Employee> employees = new List<Employee>
+ {
+ john,
+ jane
+ };
+
+ return Json(new { employees = employees }, JsonRequestBehavior.AllowGet);
+}
+
+[HttpPost]
+public ActionResult AddEmployee(Employee employee)
+{
+ return Json(new { });
+}
+```
+
+So we have three actions: `GetEmployee`, `GetEmployees`, and `AddEmployee`:
+
+-   `GetEmployee` takes an `int` parameter and returns a single employee.
+-   `GetEmployees` takes no parameters and returns a list of employees.
+-   `AddEmployee` takes an `Employee` parameter. It's also decorated with the `[HttpPost]` attribute.
+
+We are also using the `Json` helper method in our `return` statement. This method converts objects into the JSON format before returning to the browser.
+
+For the two GET methods, we are also passing in the `JsonRequestBehavior.AllowGet` parameter. Without this, we will be unable to return JSON objects successfully.
+
+## Testing the Server-Side Setup
+
+We can test the two GET methods even before we write the AngularJS code, by typing the url directly into the browser.
+
+Let's start with the `GetEmployee` method. Set a breakpoint in the beginning of that method then run Visual Studio in Debug mode. Afterwards, type in the following url in your browser:
+
+```plaintext
+
+http://localhost:64299/Home/GetEmployee?id=1
+```
+
+(**Note:** The port number might be different on your computer.)
+
+After you type in that url and press Enter, you should immediately get taken to the breakpoint in Visual Studio. Additionally, if you inspect the value of the `int` id parameter, it should have the value of 1. That is because we used a querystring `?id=1` in the url.
+
+Step through the method to the very end, and you should see the following in the browser:
+
+```javascript
+
+{"employee":{"Id":1,"FirstName":"John","LastName":"Smith"}}
+```
+
+When formatted, it looks like the following:
+
+```javascript
+
+{
+ "employee":
+ {
+ "Id":1,
+ "FirstName":"John",
+ "LastName":"Smith"
+ }
+}
+```
+
+As you can see, the `Employee` class has been turned successfully into JSON data that can be used on the client side.
+
+We can also test the `GetEmployees` method by typing in the following in the browser:
+
+```plaintext
+
+http://localhost:64299/Home/GetEmployees
+```
+
+Again, depending on your settings, you may be using a different port number.
+
+The result of that call would look like this:
+
+```javascript
+
+{"employees":[{"Id":1,"FirstName":"John","LastName":"Smith"},{"Id":2,"FirstName":"Jane","LastName":"Doe"}]}
+```
+
+Which looks like this when formatted:
+
+```javascript
+
+{
+ "employees":
+ [
+ {
+ "Id":1,
+ "FirstName":"John",
+ "LastName":"Smith"
+ },
+ {
+ "Id":2,
+ "FirstName":"Jane",
+ "LastName":"Doe"
+ }
+ ]
+}
+```
+
+This time, it returned two employees instead of one. It converted the `List<Employee>` into an array of employee JSON objects.
+
+There's no easy way to test the `AddEmployee` POST method, so we will skip it for now. We will come back to it later when we are making the actual AngularJS calls. In the meantime, let's look at the client-side setup.
+
+## Client-Side Setup
+
+We will be displaying the data we get from the `GetEmployee` and `GetEmployees` method. For the `AddEmployee` method, we will be getting the data from a form.
+
+First, let's take a look at the JavaScript code we will be using, which includes the Angular controller:
+
+```javascript
+
+(function () {
+ var app = angular.module('app', []);
+
+ app.controller('HomeCtrl', ['$scope', '$http', function ($scope, $http) {
+ $scope.employee = {};
+ $scope.employees = [];
+ $scope.newEmployee = {};
+
+ $scope.getEmployee = function () {
+ var params = {
+ id: 1
+ };
+
+ $http.get('/Home/GetEmployee', { params: params }).then(
+ function (successResponse) {
+ $scope.employee = successResponse.data.employee;
+ },
+ function (errorResponse) {
+ // handle errors here
+ });
+ };
+
+ $scope.getEmployees = function () {
+ $http.get('/Home/GetEmployees').then(
+ function (successResponse) {
+ $scope.employees = successResponse.data.employees;
+ },
+ function (errorResponse) {
+ // handle errors here
+ });
+ };
+
+ $scope.addEmployee = function () {
+ $http.post('/Home/AddEmployee', $scope.newEmployee).then(
+ function (successResponse) {
+ console.log('success');
+ },
+ function (errorResponse) {
+ // handle errors here
+ });
+ };
+ }]);
+})();
+```
+
+We are declaring a **HomeCtrl** controller, with three functions corresponding to the three methods on the server.
+
+-   `getEmployee` corresponds to `GetEmployee(int id)`. In the call to `$http.get`, we are providing the url, a params object, and success and error handlers. In the success handler, we are just assigning the `$scope.employee` variable to the data returned.
+-   `getEmployees`. corresponds to `GetEmployees()`. In the call to `$http.get` we are providing a url, but no params object. We are also using success and error handlers. In the success handler, we are just assigning the `$scope.employees` variable to the data returned.
+-   `addEmployee` corresponds to `AddEmployee(Employee employee)`. This time we are using the `$http.post` call. We are also providing the url, the parameter, and success and error handlers.
+
+The **success** and **error** handlers allow our code to react to what the server returns. If we are expecting a return value, we need to use the parameter of the success function handler, in this case, the **successResponse**. This parameter can be named anything you like. In the successResponse object, we need to drill down further to the **data** property in order to see the object that we first saw when we first tested the server-side code using the browser.
+
+Now let's take a look at the HTML code:
+
+```xml
+
+<div ng-app="app" ng-controller="HomeCtrl">
+ <h2>Get Employee</h2>
+ <a href="" ng-click="getEmployee()">Get Employee</a>
+ <p>Id: {{employee.Id}}</p>
+ <p>First Name: {{employee.FirstName}}</p>
+ <p>Last Name: {{employee.LastName}}</p>
+
+ <h2>Get Employees</h2>
+ <a href="" ng-click="getEmployees()">Get Employees</a>
+ <div ng-repeat="employee in employees">
+ <p>Id: {{employee.Id}}</p>
+ <p>First Name: {{employee.FirstName}}</p>
+ <p>Last Name: {{employee.LastName}}</p>
+ </div>
+
+ <h2>Add Employee</h2>
+ <form ng-submit="addEmployee()">
+ Id: <input type="number" ng-model="newEmployee.Id" /><br />
+ First Name: <input type="text" ng-model="newEmployee.FirstName" /><br />
+ Last Name: <input type="text" ng-model="newEmployee.LastName" /><br />
+ <button type="submit">Submit</button>
+ </form>
+</div>
+```
+
+The HTML is divided into three sections to correspond again to our three methods:
+
+-   The **Get Employee** section corresponds to the `getEmployee` function. Clicking on the link will call the `getEmployee` function, which will go to the server's `GetEmployee` method, return, and then display the returned employee data on the screen using the binding `{{}}` directives.
+-   The **Get Employees** section corresponds to the `getEmployees` function. Clicking on the link will call the `getEmployees` function, which will go to the server's `GetEmployees` method, return, and then display the returned employees using the `ng-repeat` and binding `{{}}` directives.
+-   The **Add Employee** section corresponds to the `addEmployee` function. This section makes use of a form and the `ng-submit` directive. When the form is submitted, the `addEmployee` function will be called, which will go to the server's `AddEmployee` method. The `Employee` parameter of that method should be populated with the values we put in the form.
+
+Now the code is complete! Go ahead and run Visual Studio in debug mode again. Then, try out the Get Employee and Get Employees link. Also try putting values in the form and submitting it and checking the server method if the `Employee` object was successfully captured.
+
+## Conclusion
+
+In this post we learned how to make HTTP GET and POST AJAX calls using AngularJS with ASP.NET MVC. I hope this helps you and good luck!

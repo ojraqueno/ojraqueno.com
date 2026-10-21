@@ -1,0 +1,35 @@
+---
+title: "Why I Don't Use the Repository Pattern When Working with Entity Framework"
+description: >-
+  Today I'm going to talk about a slightly controversial topic about using the repository pattern in combination with an ORM such as Entity Framework.
+publishedAt: 2016-04-18
+draft: false
+tags:
+  - design
+  - entity-framework
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2016/04/why-i-dont-use-repository-pattern-when.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/71ccb6fdb900-why-i-don-27t-use-the-repository-pattern-when-working-with-entity-framework.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/71ccb6fdb900-why-i-don-27t-use-the-repository-pattern-when-working-with-entity-framework.jpg)
+
+Today I'm going to talk about a slightly controversial topic about using the repository pattern in combination with an ORM such as Entity Framework.
+
+## Background: The Repository Pattern
+
+We are using the repository pattern when we create classes that abstract away data access code. Consumers of the repository classes do not have to deal with a database query language (such as SQL) and they don't need to have any knowledge of the underlying database technology. As far as the consuming class is concerned, the repository class is just another C# class that just happens to know how to get and save data.
+
+## The Repository Pattern Sounds Nice... So Why Am I Not Using It?
+
+Actually, the statement that "I'm not using the repository pattern" is not 100% accurate. That is because when using an ORM such as Entity Framework, I automatically get to use the repository pattern because **Entity Framework already implements the repository pattern**. That is the main reason why I don't create my own repository classes - they are redundant.
+
+So why do I still see code bases using the repository pattern?
+
+Let's delve into a little bit of history. In the past, when there were no ORM's yet, data access had to be done through ADO.NET. Using ADO.NET took the developer very close to the database layer. For example, the SQL connections had to be manually opened, SQL commands or procedures had to be manually created or named, query results had to be manually mapped back to C# objects, and so on. With this sort of data access paradigm, it made a lot of sense to hide all of this database-coupled knowledge inside repository classes.
+
+As it happens, this is exactly what Entity Framework does. A `DbSet<T>` is an implementation of a generic repository for a specific entity. In addition, `DbContext` implements the Unit of Work pattern.
+
+I think what happened was that when ORM's first came out, developers and architects wanted to keep the risk to a minimum while exploring the new technology. It was far less riskier to replace the implementation of `MyExistingRepository` than to replace the repository itself. In addition, ORM's might not have been seen as implementations of the repository pattern, but just as another way of accessing the database.
+
+## Conclusion
+
+The repository pattern is a very useful pattern that is used to hide away data access code. I am not against using the repository pattern; what I am against is the use of custom repository classes on top of using an ORM which already implements the repository pattern. There are many code bases like this today, and I don't think they'll disappear very quickly. But for new projects, it might be best to resist the temptation to create custom repository classes.

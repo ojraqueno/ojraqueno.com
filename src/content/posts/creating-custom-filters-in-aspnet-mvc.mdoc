@@ -1,0 +1,113 @@
+---
+title: Creating Custom Filters in ASP.NET MVC
+description: >-
+  Whenever ASP.NET MVC receives an HTTP request, the request goes through code in the MVC framework before it reaches our controller actions. And then, after we return from our controller, it also goes through…
+publishedAt: 2016-04-21
+draft: false
+tags:
+  - asp-net
+  - c-sharp
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2016/04/creating-custom-filters-in-aspnet-mvc.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/146e1cb1f316-creating-custom-filters-in-asp.net-mvc.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/146e1cb1f316-creating-custom-filters-in-asp.net-mvc.jpg)
+
+Whenever ASP.NET MVC receives an HTTP request, the request goes through code in the MVC framework before it reaches our controller actions. And then, after we return from our controller, it also goes through framework code before an HTTP response is emitted. The framework code that is involved is typically called the "pipeline". In this post we will talk about how we can insert our own custom code into the pipeline. This is achieved by creating special classes called filters.
+
+## You're Already Using a Filter
+
+Chances are, you are already using some of the built-in filters in your application. One common example of a filter is the `Authorize` filter. This filter can be applied globally, on the controller level, or on the controller action level. Its responsibility is to check if the user is currently logged-in or not. If the user is logged in, then it allows the request to reach our controller action. If not, it does some other action (such as redirecting the user to the login page).
+
+A huge benefit of using the `Authorize` filter is that it saves us from checking if the user is logged in on every controller action that needs protection. This reduces the amount of duplicate code in our application.
+
+## Use Case for a Custom Filter
+
+I often see try-catch expressions in controller actions where the catch block is the same for everything:
+
+```csharp
+
+public ActionResult Action1()
+{
+ try
+ {
+
+ }
+ catch (Exception ex)
+ {
+ // Catch implementation
+ }
+}
+
+public ActionResult Action2()
+{
+ try
+ {
+
+ }
+ catch (Exception ex)
+ {
+ // Same catch implementation as above
+ }
+}
+
+// .. and so on
+```
+
+Wouldn't it be nice if we could get rid of all the try-catch blocks on all actions and move the catch implementation somewhere centralized?
+
+This is where creating a filter would come in handy.
+
+## Creating a Custom Filter
+
+In the case of the `Authorize` filter, it does its job before the controller action is executed. But for our filter, we want it to be able to catch exceptions and we want to be able to implement our own logic in it.
+
+Fortunately, the MVC framework makes it easy for us to do this by providing an `IExceptionFilter` interface that we can use. The `IExceptionFilter` contains a single void method named `OnException`. When we create a class that implements this interface, we can place our own logic inside the implementation of the `OnException` method.
+
+Below is a sample implementation of a custom exception filter, which just logs any exception that it catches:
+
+```csharp
+
+public class ExceptionLoggingFilterAttribute : FilterAttribute, IExceptionFilter
+{
+ public void OnException(ExceptionContext filterContext)
+ {
+ // Imagine that we have a Logger class that knows how to log exceptions.
+ var logger = Logger.GetLogger();
+ logger.LogException(filterContext.Exception);
+ }
+}
+```
+
+As you can see, we are implementing the `IExceptionFilter` interface so that we can use the `OnException` method. We can have any implementation in the `OnException` method. In the example, we are simply logging the exception.
+
+Notice that we are also inheriting from the `FilterAttribute` class which the MVC framework provides. That is so we can use our filter using the square bracket notation (ex: `[ExceptionLoggingFilter]`).
+
+## Using the Filter
+
+With our custom action filter created, we can use it like any other filter. To test it out, we can decorate a controller action with our filter and throw an exception in the controller action:
+
+```csharp
+
+[ExceptionLoggingFilter]
+public ActionResult MyAction()
+{
+ throw new Exception("An error occurred!");
+}
+```
+
+Because our controller action is decorated with the `ExceptionLoggingFilter` attribute, our `OnException` method inside the filter will get executed whenever an unhandled exception is thrown. Go ahead and debug the application to see! :)
+
+And that's it, now we have a centralized place where we can handle exceptions, and **we don't need repetitive try-catch blocks in our controller actions** anymore.
+
+## Some Notes
+
+Here are some things to be aware of when using filters:
+
+1.  **Like other filters, our custom filter can be applied on the action level, on the controller level, or globally.**
+2.  **There are other filter interfaces, such as `IActionFilter`.** In the case of `IActionFilter`, it exposes two methods: `OnActionExecuting` which runs before a controller action executes and `OnActionExecuted` which runs after an action executes.
+3.  **Filter order is important!** If you choose to add exception filters globally, note that the last added filter will run first. So typically, you would add your custom exception filter last.
+4.  **You can stop other exception filters from firing.** Once your own exception filter executes, you may want to prevent other exception filters from executing. To achieve this, just set the `ExceptionHandled` property on the `filterContext` to `true`.
+
+## Conclusion
+
+In this post we talked about filters in the MVC framework. We saw a use case for a filter and then implemented our own custom filter. I encourage you to explore the different kinds of filters and to think of ways on how you can use filters to reduce duplicate code in your application.

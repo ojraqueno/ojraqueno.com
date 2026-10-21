@@ -1,0 +1,82 @@
+---
+title: Getting Started with Python
+description: >-
+  I usually talk about .NET topics, but today I want to talk about Python. Big shout out to my partner, who is a Python developer, for inspiring me to write about Python.
+publishedAt: 2020-11-02
+draft: false
+tags:
+  - python
+originalUrl: https://ojdevelops.blogspot.com/2020/11/getting-started-with-python.html
+---
+I usually talk about .NET topics, but today I want to talk about Python. Big shout out to my partner, who is a Python developer, for inspiring me to write about Python.
+
+## Python Summary
+
+For the .NET people out there, here is a quick summary of the Python programming language:
+
+-   Concise and readable syntax, suitable for programmers of all levels
+-   Dynamically typed and interpreted, ideal for rapid application development and prototyping
+-   Consistenly rated as one of the most popular programming languages in the [TIOBE Index](https://www.tiobe.com/tiobe-index/) and [StackOverflow survey](https://insights.stackoverflow.com/survey/2020)
+-   Widely used for web and data science applications
+
+To install Python, go to [https://www.python.org/downloads/](https://www.python.org/downloads/) and download the version you want. I would recommend getting the 3+ version. I am using [version 3.9.0](https://www.python.org/downloads/release/python-390/) for this post.
+
+During installation, it might ask you if you want to add Python to the PATH. I would recommend checking this option so that you can run Python from any location in your command prompt or terminal.
+
+## Python Hello World
+
+Python code live in `.py` files, much like how C# code live in `.cs` files. But to try Python out, we don't actually need something saved in a file.
+
+To try it out, type `python` in your command prompt or terminal. When you press Enter, you should see the '>>>' prompt, which is the Python REPL. You'll also see some info about Python and your environment and some helpful commands:
+
+```python
+
+C:\>python
+Python 3.9.0 (tags/v3.9.0:9cf6752, Oct 5 2020, 15:34:40) [MSC v.1927 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>>
+```
+
+On the >>> REPL, you can type Python code already. For example, type `print('Hello, world!')` to print to the console:
+
+```python
+
+>>> print('Hello, world!')
+Hello, world!
+```
+
+To exit, just type Ctrl+Z and press Enter.
+
+## Python Hello World Using a File
+
+The Python REPL is a great way to try out Python features and play with the language. But for real projects, it would be ideal to put the code into files.
+
+Create a file named `helloworld.py`, with the following contents:
+
+```python
+
+print('Hello, world!')
+```
+
+This is the exact same content we tried out in the prompt.
+
+Back in the prompt, type the following to run the program:
+
+```python
+
+python helloworld.py
+```
+
+You should see the exact same output as we saw in the terminal.
+
+## Comparision with C#/.NET
+
+This is only a small example, but already we can see some differences between C#/.NET and Python.
+
+The difference that stands out to me the most is that because Python is an interpreted language, there is no compile step. In C#, there is a compile step which results in the creation of the `bin` folder and the resulting `.exe` or `.dll` file. In Python, there are no such artifacts.
+
+There's also less ceremony in creating a simple program in Python. In .NET land, the simplest console app requires a lot of fluff to be present: `using` statements and declarations of the namespace, class, and Main method. Those stuff could be intimidating for someone who's a complete beginner to programming. Note though that that's changing in .NET 5.
+
+## Conclusion
+
+Getting started with Python is very easy. You just install it and it's ready to use with your command prompt and/or your favorite text editor. Check out [https://www.python.org/](https://www.python.org/) for more information about Python.

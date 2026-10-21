@@ -1,0 +1,128 @@
+---
+title: Refactoring to the Single Responsibility Principle
+description: >-
+  In this post we are going to show a simple example of refactoring code to better adhere to the Single Responsibility Principle (SRP).
+publishedAt: 2015-10-03
+draft: false
+tags:
+  - design
+  - srp
+originalUrl: https://ojdevelops.blogspot.com/2015/10/refactoring-to-single-responsibility.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6525a6ad644b-refactoring-to-the-single-responsibility-principle.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6525a6ad644b-refactoring-to-the-single-responsibility-principle.jpg)
+
+In this post we are going to show a simple example of refactoring code to better adhere to the Single Responsibility Principle (SRP).
+
+## The Setup
+
+Let's say we are building an application where one of the features is to process tweets of a specific user. We could write a class called `MyService` and put a `ProcessTweets` method in it, like so:
+
+```csharp
+
+public class MyService
+{
+ public void ProcessTweets(User user)
+ {
+ var twitterService = new TwitterService();
+ var tweets = twitterService.GetTweets(user);
+
+ // do something with tweets
+ }
+}
+```
+
+Where `TwitterService` is a placeholder and can be, for example, a .NET port of the Twitter API. Everything works as expected.
+
+## Version Two
+
+Now suppose that we want to implement some kind of caching. In the code above, the `TwitterService.GetTweets` method always gets called. What we want to happen is to find a way to store the tweets of a `User` the first time they are retrieved, so that next time, the data will be fetched from this cache rather than calling `TwitterService.GetTweets` again.
+
+One way to implement a cache is to use a static `Dictionary`:
+
+```csharp
+
+public class MyService
+{
+ private static Dictionary<User, List<Tweet>> tweetsDictionary = new Dictionary<User, List<Tweet>>();
+
+ public void ProcessTweets(User user)
+ {
+ List<Tweet> tweets = null;
+
+ if (tweetsDictionary.ContainsKey(user))
+ {
+ tweets = tweetsDictionary[user];
+ }
+ else
+ {
+ var twitterService = new TwitterService();
+ tweets = twitterService.GetTweets(user);
+ tweetsDictionary.Add(user, tweets);
+ }
+
+ // do something with tweets
+ }
+}
+```
+
+So now, the `TwitterService.GetTweets` method only gets called the first time. On subsequent calls, the values stored from the `Dictionary` will be returned. Everything works as expected.
+
+## Counting Responsibilities
+
+In the first version of the code, the only responsibility of `MyService` was to process tweets, and getting the tweets was straightforward. In the second version, which implements simple caching, another responsibility was added: the management of the cache.
+
+To some, the management of the cache may not be a separate responsibility, but is instead a simple implementation detail of the "process tweets" requirement. But I do believe that it is a separate responsibility. Here is the way I think about it:
+
+-   The implementation of caching is not directly related to the "process tweets" requirement. As we saw in the first version, the requirement can be satisfied even without caching.
+-   Because of the point above, changes to the caching implementation should not affect the "process tweets" implementation (that is, the `MyService` class). But as the code stands right now, any changes to the caching implementation will change the `MyService` class.
+
+## Version Three
+
+To better adhere to the SRP, we can create a separate class that takes care of the caching. Something like this:
+
+```csharp
+
+public class TweetCache
+{
+ private static Dictionary<User, List<Tweet>> tweetsDictionary = new Dictionary<User, List<Tweet>>();
+
+ public static List<Tweet> GetTweets(User user)
+ {
+ List<Tweet> tweets = null;
+
+ if (tweetsDictionary.ContainsKey(user))
+ {
+ tweets = tweetsDictionary[user];
+ }
+ else
+ {
+ var twitterService = new TwitterService();
+ tweets = twitterService.GetTweets(user);
+ tweetsDictionary.Add(user, tweets);
+ }
+
+ return tweets;
+ }
+}
+```
+
+And then, `MyService` can just make use of the `TweetCache` class:
+
+```csharp
+
+public class MyService
+{
+ public void ProcessTweets(User user)
+ {
+ var tweets = TweetCache.GetTweets(user);
+
+ // do something with tweets
+ }
+}
+```
+
+In this setup, changes to the caching implementation will only affect `TweetCache`. `MyService` will be unaffected.
+
+## Conclusion
+
+In this post, we saw a simple example of a violation of the Single Responsibility Principle along with a possible solution. To keep things simple, the implemented solution is a helper class with a static method. There can be other solutions to the problem, however the main point of this post is to show that different responsibilities should belong to different classes.

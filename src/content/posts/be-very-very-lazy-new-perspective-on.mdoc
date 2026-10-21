@@ -1,0 +1,64 @@
+---
+title: "Be Very, Very Lazy - A New Perspective on the Single Responsibility Principle"
+description: >-
+  Today I'm giving a tip on how we can remember to follow the Single Responsibility Principle. I'm sure many of you will be able to relate to this tip (at least I surely can!) which is: be very, very lazy!
+publishedAt: 2017-01-01
+draft: false
+tags:
+  - srp
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2017/01/be-very-very-lazy-new-perspective-on.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4151f7cb8ff7-be-very-very-lazy-a-new-perspective-in-the-single-responsibility-principle.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4151f7cb8ff7-be-very-very-lazy-a-new-perspective-in-the-single-responsibility-principle.jpg)
+
+Today I'm giving a tip on how we can remember to follow the Single Responsibility Principle. I'm sure many of you will be able to relate to this tip (at least *I* surely can!) which is: be very, very lazy!
+
+## Huh? What do you mean?
+
+No, I'm not talking about being lazy on the job. Rather, I'm talking about laziness of code units. For simplicity's sake, we will talk about the `class` code unit, though this principle can be applied to other units (such as methods) as well.
+
+To make this more concrete, let's take a look at an example of a user action and what it has to go through to accomplish its business goal. In this case, the user action is a web request in an ASP.NET MVC application and the goal would be to update the database somehow.
+
+Here are the steps:
+
+1.  Parse the web request and turn it into an instance of some class.
+2.  Perform validation on the instance.
+3.  Turn the instance into another instance of a class which lives in the business logic layer.
+4.  Perform business logic (ex: computations, further validation) on the instance.
+5.  Connect to the database and make the appropriate update.
+
+That's a lot of work for a single code unit (class) to handle! So what does the class do? Be lazy, of course!
+
+## I don't want to do all of this work. I'm gonna ask someone else to do them for me!
+
+That is the cry of our poor class. And he won't just ask one other code unit to do the work for him, but many.
+
+With that in mind, the list becomes (I added some links to my previous blog posts concerning the appropriate topic):
+
+1.  Parse the web request and turn it into an instance of some class. - ***I'm gonna ask a model binder to do that!***
+2.  Perform validation on the instance. - ***I'm gonna let DataAnnotations or FluentValidation take care of that!***
+3.  Turn the instance into another instance of a class which lives in the business logic layer. ***I'm gonna ask AutoMapper to do that!*** ([http://bit.ly/2huUtOD](http://bit.ly/2huUtOD))
+4.  Perform business logic (ex: computations, further validation) on the instance. - ***I'm gonna let the business logic classes take care of that!***
+5.  Connect to the database and make the appropriate update. - ***I'm gonna let an ORM or repository layer do that for me!*** ([http://bit.ly/2huD60o](http://bit.ly/2huD60o))
+
+So we see that our class has delegated most of its work to other classes or code units. Here are some other examples of laziness:
+
+-   Need to manage the lifetime of dependencies - ***I'm gonna use an IoC container for that!*** ([http://bit.ly/1VNxS2i](http://bit.ly/1VNxS2i))
+-   Need to retrieve values from a configuration file and cast them to the correct type - ***I'm gonna use a specialized helper class for that!*** ([http://bit.ly/2ie7Vuk](http://bit.ly/2ie7Vuk))
+-   Need to store / retrieve values from the session and cast them to the correct type - ***Again, I'm gonna use another specialized helper class for that!*** ([http://bit.ly/2iLeJRh](http://bit.ly/2iLeJRh))
+-   Need to perform some processing on incoming / outgoing requests. - ***I'm gonna ask filters to do that!*** ([http://bit.ly/1Smme7V](http://bit.ly/1Smme7V))
+-   Need to serialize/deserialize an object to/from JSON - ***I'm gonna use JSON.NET for that!*** ([http://bit.ly/1rHEhyU](http://bit.ly/1rHEhyU))
+
+You can probably think of other instances where a class can demonstrate this kind of laziness and delegate tasks to others.
+
+Now, your controller classes probably already do some of the things here, such as to let the model binder take care of parsing a web request and to let an external library (ex: AutoMapper, JSON.NET) do some specialized work.
+
+But there's no need to stop there, and in fact we *shouldn't* stop there. In writing our own software, it would be good to be as lazy as possible in all of our classes (and other code units). If we write software with this lazniess in mind, we should arrive at a place similar to where we would have gotten had we written software with the SRP in mind.
+
+And if we follow along this road of delegation even further, it may even lead us to programming in a functional style. But that would be a topic for another blog post. :)
+
+## Conclusion
+
+In this post I talked about the laziness principle. Our code units should be very lazy in the sense that it should delegate work to other code units as much as possible. The code unit we talked about is the class, though the principle can be applied to other code units as well.
+
+Finally, a good reason to be lazy! :)

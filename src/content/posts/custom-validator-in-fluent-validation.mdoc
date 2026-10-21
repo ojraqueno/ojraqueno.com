@@ -1,0 +1,79 @@
+---
+title: Custom Validator in Fluent Validation
+description: >-
+  Fluent validation is an excellent validation framework for and written in .NET. It is easy to use and supports the most common validation scenarios out of the box; I highly recommend that you use it in your projects.…
+publishedAt: 2013-12-19
+draft: false
+tags:
+  - net
+  - c-sharp
+  - fluent-validation
+  - validation
+originalUrl: https://ojdevelops.blogspot.com/2013/12/custom-validator-in-fluent-validation.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2164172e6986-custom-validator-in-fluent-validation.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2164172e6986-custom-validator-in-fluent-validation.jpg)
+
+[Fluent validation](http://fluentvalidation.codeplex.com/) is an excellent validation framework for and written in .NET. It is easy to use and supports the most common validation scenarios out of the box; I highly recommend that you use it in your projects. There are times, however, that you want to add your own validators in order to support your business rules. In this post, we will be implementing a custom generic validator with arguments.
+
+## The Validator
+
+We will be creating a validator that checks if the value of a certain property is in a supplied enumerable. The final syntax will look like:
+
+```csharp
+
+RuleFor(u => u.Continent).In(new[] { "Africa", "Europe", "Asia", "North America", "South America", "Antartica", "Australia" });
+```
+
+In that snippet, the property `Continent` is a `string`. The intent is for validation to fail if the `Continent` value is not in the supplied enumerable. In the snippet, we used a `string` array, though we will be creating the validator in such a way that we can pass any `IEnumerable<T>` in.
+
+## The Validator Class
+
+We will create a new class that would encapsulate the encapsulation logic. For an introduction to creating custom validators, see [this page on codeplex](http://fluentvalidation.codeplex.com/wikipage?title=Custom). In our validator, we will be creating a validator that accepts arguments and is generic (can be used on any property type).
+
+The first step is to create the validator class. I will include it here first then provide explanations:
+
+```csharp
+
+public class InValidator<T> : PropertyValidator
+{
+ public IEnumerable<T> Enumerable { get; private set; }
+
+ public InValidator(IEnumerable<T> enumerable)
+ : base("Property {PropertyName} not in the specified enumerable.")
+ {
+ Enumerable = enumerable;
+
+ if (enumerable == null)
+ {
+ throw new ArgumentNullException("enumerable", "Enumerable should not be null.");
+ }
+ }
+
+ protected override bool IsValid(PropertyValidatorContext context)
+ {
+ var item = (T)context.PropertyValue;
+ return Enumerable.Contains(item);
+ }
+}
+```
+
+Like any custom property validator, this class inherits from the `PropertyValidator` class. The key element here is the `IEnumerable<T> Enumerable` property, whose value gets supplied from the constructor. The actual validation happens in the `IsValid` method, where we just check if the property value is in the supplied collection.
+
+## Creating the Extension
+
+The validator is usable now by using `SetValidator`, but in order to get the fluent syntax above, we are going to need to write an extension method for this validator. It would look like this:
+
+```csharp
+
+public static class Extensions
+{
+ public static IRuleBuilderOptions<T, TProperty> In<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, IEnumerable<TProperty> enumerable)
+ {
+ return ruleBuilder.SetValidator(new InValidator<TProperty>(enumerable));
+ }
+}
+```
+
+The extension method essentially acts as a wrapper for our validator class. In addition, it allows us to use the validator in a fluent way.
+
+The fluent validation framework is a powerful framework that supports many validation scenarios, and includes a catch-all predicate validator. If you prefer to have validators that are more fit for your needs, creating a custom validator might be the way to go. This post showed you how to create one such validator. Hopefully it can help you in creating your own custom validators. Have fun!

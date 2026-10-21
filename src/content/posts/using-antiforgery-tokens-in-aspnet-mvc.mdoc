@@ -1,0 +1,83 @@
+---
+title: Using AntiForgery Tokens in ASP.NET MVC
+description: >-
+  Cross-site Request Forgery (CSRF or XSRF) is a type of cyber attack wherein an attacker makes an HTTP request on a user's behalf without the user's knowledge or consent. If successful, a significant amount of damage…
+publishedAt: 2015-12-19
+draft: false
+tags:
+  - asp-net
+  - c-sharp
+  - mvc
+  - security
+originalUrl: https://ojdevelops.blogspot.com/2015/12/using-antiforgery-tokens-in-aspnet-mvc.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/edfd6c0c9df1-using-antiforgery-tokens-in-asp.net-mvc.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/edfd6c0c9df1-using-antiforgery-tokens-in-asp.net-mvc.jpg)
+
+Cross-site Request Forgery (CSRF or XSRF) is a type of cyber attack wherein an attacker makes an HTTP request on a user's behalf without the user's knowledge or consent. If successful, a significant amount of damage can be done, depending on the nature of the request. This kind of attack can be prevented by using antiforgery tokens. In this post, we will talk about how we can prevent CSRF attacks in our ASP.NET MVC applications.
+
+## More About CSRF
+
+Let's say that you are registered at an online banking service that lets you send money to another member of the same service. Suppose that the HTTP request to transfer a thousand dollars to a member with email bob@email.com is this:
+
+```plaintext
+
+POST www.somebank.com/money/transfer HTTP/1.1
+Host: www.somebank.com
+
+Amount=1000&Destination=bob@email.com
+```
+
+It is a very simple request and certainly not one that we would expect to see in the real world, but it will suffice for demonstration purposes.
+
+To do a CSRF attack, an attacker would have to make a request that follows the same format, but with some values modified. For example, the attacker could make the amount bigger and change the destination to his/her own account, like this:
+
+```plaintext
+
+POST www.somebank.com/money/transfer HTTP/1.1
+Host: www.somebank.com
+
+Amount=100000&Destination=attacker@email.com
+```
+
+The request can be initiated from outside the website, say, from an image link in an email. This is an example of a CSRF attack.
+
+## AntiForgery Tokens to the Rescue
+
+One way to prevent CSRF attacks is for the server receiving the request to make sure that the request came from a trusted source. That trusted source is usually from the website itself. Here is where antiforgery tokens come in. An antiforgery token is essentially a long string of text that only the server knows about. Following is an example of how it can be used to prevent CSRF attacks:
+
+When the server serves a form to the browser, it will embed an antiforgery token on a hidden input on the form. When the form is posted to the server, the token will also be passed as one of the form values. The server can then verify that the token in the post request is the same as the token it originally embedded. The request is processed only when the two match. For requests that originated from outside the site, this token will not be present and the request will not be processed.
+
+## AntiForgery Tokens in ASP.NET MVC
+
+ASP.NET MVC already has a built-in system that lets us take advantage of antiforgery tokens to prevent CSRF attacks. We just need to take advantage of the system. Fortunately there are only two steps: 1) place a token in a form and 2) tell the framework to check the token for that form.
+
+First we need to place a token in a form. To generate the token we can use the `AntiForgeryToken` helper method:
+
+```xml
+
+<form method="post" action="MyAction">
+@Html.AntiForgeryToken()
+
+<!-- other form fields here as usual -->
+</form>
+```
+
+This will generate a hidden field whose value contains the token.
+
+Next, we need to tell ASP.NET MVC that a token should be checked for the controller action associated with the form. To do that, we decorate the action with the `ValidateAntiForgeryToken` attribute:
+
+```csharp
+
+[HttpPost, ValidateAntiForgeryToken]
+public ActionResult MyAction(MyModel myModel)
+{
+ // the code block in the controller will not execute
+ // if the token check fails
+}
+```
+
+Once those are in place, the form will be protected from CSRF attacks. If step 1 is missed but step 2 is done, we will get an exception when we try to post, stating that "A required anti-forgery token was not supplied or was invalid." If we do step 1 but do not do step 2, then the application will still not be protected against CSRF attacks.
+
+## Conclusion
+
+In this post we learned about CSRF and how it can be prevented using antiforgery tokens. We also talked about ASP.NET MVC's antiforgery system and how we can take advantage of it to prevent CSRF attacks. We also briefly looked at what happens when one of the two steps are not done.

@@ -1,0 +1,46 @@
+---
+title: Libraries and Frameworks
+description: >-
+  Today we are going to take a look at libraries and frameworks. We will describe each of them and take a look at some examples for each. We will also take a look at a practical example of how being able to distinguish…
+publishedAt: 2016-05-09
+draft: false
+tags:
+  - design
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2016/05/libraries-and-frameworks.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3de782151010-libraries-and-frameworks.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3de782151010-libraries-and-frameworks.jpg)
+
+Today we are going to take a look at libraries and frameworks. We will describe each of them and take a look at some examples for each. We will also take a look at a practical example of how being able to distinguish between the two will help us in our daily coding.
+
+## What is a Library?
+
+Libraries and frameworks are code texts (typically written by 3rd parties) that we can download and use in an application. The main difference lies in how we use them - that is, how our own code interacts with the library/framework code.
+
+**Libraries** provide a set of numerous functionalities. We are in complete control of which functions we choose to utilize and which to ignore. Libraries typically don't require much setup code. Just download and reference the libraries' files, and we can start using them immediately.
+
+I like to think of libraries as any code that provides extra functionality or convenience methods. For example, we can download the **moment.js** library and take advantage of its numerous functions for handling JavaScript dates. We can use **JQuery** to do DOM manipulation and hook to events intuitively. On the server-side, we can use the fantastic **Humanizer** library for working with strings.
+
+Notice how libraries handle one specific functional area: Dates (moment.js), DOM manipulation (JQuery), and strings (Humanizer). This is a typical characteristic of libraries.
+
+## What is a Framework?
+
+**Frameworks**, on the other hand, do not exhibit the same kind of focus. Instead, they typically have a say on the behavior of all parts of an application. It is the framework that makes the application run, and our custom code lives in the framework. Our custom code has to play by the framework's rules through points of extension that the framework provides. Frameworks also typically need some kind of setup before we can begin using them.
+
+An example of a framework is **ASP.NET MVC**. ASP.NET MVC handles all aspects of working with web applications - from interpreting a request to generating a response. Our custom code should play by the framework's rules. In order to handle a web request, we are going to have to use classes / interfaces that the framework provides, such as `Controller`, `ApiController`, `IActionFilter`, and so on. There is also some setup needed for the framework to work, such as those in `Startup.cs` or in `Global.asax.cs`.
+
+Another example of a framework is **AngularJS**. For any non-trivial application, all of our custom code should live in constructs that the framework provides, such as in `controllers`, `directives`, `services`, and so on. In order to use libraries and still take advantage of the framework's capabilities (such as two-way, automatic binding), we would have to know how to work with the framework's digest cycle. There is also some setup code required, such as when we declare modules and their dependencies.
+
+## How Can Being Able to Distinguish Between Libraries and Frameworks Help Me?
+
+Recently I was looking at some JavaScript code involving a thumbnail slider. The AngularJS framework was being used, and the slider is being handled by a thumbnail slider JavaScript library.
+
+There was a bug in the code - applying some built-in AngularJS directives (like `ng-show`) did not seem to affect the thumbnail slider items. But there were no errors reported, and the final DOM looks as expected. After some experimentation and thought, I found that the directives being applied to the slider items didn't have the corresponding AngularJS functionality - they just appeared in the DOM as "normal" attributes. As it turns out, the thumbnail slider library did not work well with the AngularJS framework.
+
+This is an example of how being able to distinguish a framework vs a library can help. When using a framework and trying to use libraries in it, we have to make sure first that the libraries are compatible with the way the framework works. In the slider example above, one solution would be to look for a different, AngularJS-friendly library - a library that's able to work with all the AngularJS directives, respects AngularJS events, etc. This is one example of how knowing how to work with a framework can help us find the cause of bugs or prevent bugs.
+
+Knowing how the framework behaves can also lead to a better, more natural design. For example, in ASP.NET MVC, instead of writing try-catch blocks in all of the controller actions, we can centralize it to just one place by using a custom filter that we can create using an interface that the ASP.NET MVC framework provides. I show an example of this in [Creating Custom Filters in ASP.NET MVC](/blog/creating-custom-filters-in-aspnet-mvc/). The end result is less repetitive code and a design that fits more with the framework's design.
+
+## Conclusion
+
+In this post we talked about libraries and frameworks. We looked at simple descriptions and examples for each. We also talked about how being able to distinguish a library from a framework can help us in our daily coding tasks. For frameworks specially, knowledge of how the framework behaves and the extension points it provides can help in investigating / preventing bugs and in a better design.

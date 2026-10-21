@@ -6,6 +6,19 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf(),
 );
 
+const groups = posts.reduce<
+  { year: number; posts: typeof posts }[]
+>((acc, post) => {
+  const year = post.data.publishedAt.getFullYear();
+  const current = acc.at(-1);
+  if (!current || current.year !== year) {
+    acc.push({ year, posts: [post] });
+  } else {
+    current.posts.push(post);
+  }
+  return acc;
+}, []);
+
 const dateFormatter = new Intl.DateTimeFormat('en', {
   year: 'numeric',
   month: 'short',
@@ -23,27 +36,36 @@ const dateFormatter = new Intl.DateTimeFormat('en', {
     migrated from Blogger with their original dates.
   </p>
 
-  <ul class="post-list">
-    {
-      posts.map((post) => (
-        <li class="post-item">
-          <a href={`/blog/${post.id}/`}>
-            <time datetime={post.data.publishedAt.toISOString()}>
-              {dateFormatter.format(post.data.publishedAt)}
-            </time>
-            <div>
-              <h3>{post.data.title}</h3>
-              <p>{post.data.description}</p>
-              <div class="tag-row">
-                {post.data.originalUrl && <span class="tag">From Blogger</span>}
-                {post.data.tags.slice(0, 3).map((tag) => (
-                  <span class="tag">{tag}</span>
-                ))}
-              </div>
-            </div>
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+  {
+    groups.map((group) => (
+      <section class="year-group" aria-labelledby={`year-${group.year}`}>
+        <h2 class="year-label" id={`year-${group.year}`}>
+          {group.year}
+        </h2>
+        <ul class="post-list">
+          {group.posts.map((post) => (
+            <li class="post-item">
+              <a href={`/blog/${post.id}/`}>
+                <time datetime={post.data.publishedAt.toISOString()}>
+                  {dateFormatter.format(post.data.publishedAt)}
+                </time>
+                <div>
+                  <h3>{post.data.title}</h3>
+                  <p>{post.data.description}</p>
+                  <div class="tag-row">
+                    {post.data.originalUrl && (
+                      <span class="tag tag-muted">From Blogger</span>
+                    )}
+                    {post.data.tags.slice(0, 3).map((tag) => (
+                      <span class="tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
 </BaseLayout>

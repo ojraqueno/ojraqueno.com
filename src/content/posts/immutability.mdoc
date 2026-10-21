@@ -1,0 +1,145 @@
+---
+title: Immutability
+description: >-
+  Last time, we looked at pure vs impure functions and we said that functional programming favors pure over impure functions.
+publishedAt: 2019-05-06
+draft: false
+tags:
+  - c-sharp
+  - functional-programming
+originalUrl: https://ojdevelops.blogspot.com/2019/05/immutability.html
+---
+Last time, we looked at [pure vs impure functions](/blog/pure-vs-impure-functions/) and we said that functional programming favors pure over impure functions.
+
+Using pure functions leads to another concept: **immutability**.
+
+Immutability means that a variable can only have its value set once. After that, the value never changes. So much so that in functional programming, the phrase "assigning to a variable" is often replaced by "binding to a symbol", since the word "variable" is not applicable anymore.
+
+Let's consider a non-immutable example:
+
+```csharp
+
+// Declare a class named Car
+public class Car
+{
+ public string Color { get; set; }
+ public bool IsStarted { get; set; }
+}
+
+// Instantiate a new instance
+var myCar = new Car
+{
+ Color = "Red",
+ IsStarted = true
+};
+
+// After that, change the values of the car's properties
+myCar.Color = "Blue";
+myCar.IsStarted = false;
+```
+
+The properties inside of the `Car` class are **not** immutable since they can be changed after the `Car` object has been instantiated.
+
+Now, consider an example of a similar class whose properties are immutable:
+
+```csharp
+
+// Declare a class named Car
+public class Car
+{
+ // Use the readonly keyword to enforce the rule that the variables can only be assigned to once, during instantiation
+ private readonly string _color;
+ private readonly bool _isStarted;
+
+ public Car(string color, bool isStarted)
+ {
+ _color = color;
+ _isStarted = isStarted;
+ }
+
+ public string Color => _color;
+ public bool IsStarted => _isStarted;
+}
+
+// Instantiate a new instance
+var myCar = new Car("Red", true);
+
+// After that, the values of the car's properties cannot be changed
+myCar.Color = "Blue"; // compile error
+myCar.IsStarted = false; // compile error
+```
+
+This is an example of a class whose properties are immutable. Their values are only assigned one time (during instantiation), and can no longer be modified afterwards.
+
+What if we wanted to stop the car? We can't simply set `myCar.IsStarted = false`. How do we go about doing that in a functional way?
+
+**The workaround to "modify" something that has immutable properties is to create a new instance of it, initialize the new instance with the changes desired, copy the values of all other properties, and then return that new instance.**
+
+Here's how that might look for our immutable `Car` class:
+
+```csharp
+
+// Declare a class named Car
+public class Car
+{
+ // Use the readonly keyword to enforce the rule that the variables can only be assigned to once, during instantiation
+ private readonly string _color;
+ private readonly bool _isStarted;
+
+ public Car(string color, bool isStarted)
+ {
+ _color = color;
+ _isStarted = isStarted;
+ }
+
+ public string Color => _color;
+ public bool IsStarted => _isStarted;
+
+ public Car SetIsStarted(bool isStarted)
+ {
+ return new Car(this.Color, isStarted);
+ }
+}
+```
+
+Notice that we added a method `SetIsStarted` that returns a new instance of `Car`. The value of `isStarted` for that new instance comes from the parameter that we pass in the method. All other properties of the new instance (like its color) are just copied from the current instance.
+
+Notice also that the `SetIsStarted` method is a pure function. It doesn't have side effects; it doesn't modify the car instance where it's called from.
+
+In a similar way, there could also be a similar method for setting the car's color:
+
+```csharp
+
+// Declare a class named Car
+public class Car
+{
+ // ...
+
+ public Car SetColor(string color)
+ {
+ return new Car(color, this.IsStarted);
+ }
+}
+```
+
+That method also returns a new car instance while not modifying the instance where it's called from.
+
+Here's an example of how those methods can be used:
+
+```csharp
+
+// Instantiated a red, started car
+var redStartedCar = new Car("Red", true);
+
+// "Change" the car to a blue one
+var blueStartedCar = redStartedCar.SetColor("Blue");
+
+// "Change" it again to a stopped one
+var blueStoppedCar = blueStartedCar.SetIsStarted(false);
+
+// Since our Set methods return a new instance of Car, we can chain them together
+// "Change" the car one last time to an orange started car
+var orangeStartedCar = blueStoppedCar.SetColor("Orange").SetIsStarted(true);
+```
+
+And that shows an example of how immutability can be achieved in C#.

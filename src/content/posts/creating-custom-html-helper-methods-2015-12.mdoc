@@ -1,0 +1,171 @@
+---
+title: Creating Custom Html Helper Methods Part 2
+description: >-
+  In a previous post we talked about creating custom html helpers . The implementation there involved customizing helpers that already existed in the ASP.NET MVC framework. In this post we will talk about creating our…
+publishedAt: 2015-12-05
+draft: false
+tags:
+  - asp-net
+  - c-sharp
+  - mvc
+  - razor
+originalUrl: https://ojdevelops.blogspot.com/2015/12/creating-custom-html-helper-methods.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/618aecc2e72a-creating-custom-html-helper-methods-part-2.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/618aecc2e72a-creating-custom-html-helper-methods-part-2.jpg)
+
+In a previous post we talked about [creating custom html helpers](/blog/creating-custom-html-helper-methods/). The implementation there involved customizing helpers that already existed in the ASP.NET MVC framework. In this post we will talk about creating our own helpers from scratch. This will allow us to create helpers for any kind of html element and will also provide flexibility on the element building process.
+
+## The Situation
+
+When working with the Twitter Bootstrap framework, it is common for each property in the model to correspond to a label and an input. For example:
+
+```xml
+
+<div class="form-group">
+ @Html.LabelFor(m => m.Name, new { @class = "control-label" })
+ @Html.TextBoxFor(m => m.Name, new { @class = "form-control" })
+</div>
+```
+
+Our goal is to create a new helper that wraps the `form-group` div, so that the end result will be this:
+
+```xml
+
+@Html.FormGroupFor(m => m.Name)
+```
+
+## HtmlTags
+
+Before we get started, let's install a NuGet package called [HtmlTags](https://www.nuget.org/packages/HtmlTags/). We will use this to construct our html elements.
+
+HtmlTags can be installed through the NuGet package manager or through the Package Manager Console:
+
+```plaintext
+
+Install-Package HtmlTags
+```
+
+## Building the Helper Class
+
+Now let's create a new class that will hold our `FormGroupFor` extension method.
+
+```csharp
+
+using HtmlTags;
+using System;
+using System.Linq.Expressions;
+using System.Web.Mvc;
+
+public static class HtmlHelpers
+{
+ public static HtmlTag FormGroupFor<TModel, TValue>(this HtmlHelper<TModel> html,
+ Expression<Func<TModel, TValue>> expression)
+ {
+
+ }
+}
+```
+
+It is going to be an extension method so the class and the method both have to be `static`. The `expression` parameter will provide us with the information we need to build the html elements.
+
+The code won't compile yet, so let's continue working on our method.
+
+## ModelMetadata and ExpressionHelper
+
+The ASP.NET MVC framework provides us with two classes that will be of great help to us. These are the `ModelMetadata` and `ExpressionHelper` classes. The `ModelMetadata` class is particularly useful because it lets us access the `DataAnnotations` we used to decorate the model.
+
+Let's look at how we can use `ModelMetadata` and `ExpressionHelper`. Inside the `FormGroupFor` method, let's put the following code:
+
+```csharp
+
+ModelMetadata metadata = ModelMetadata.FromLambdaExpression(expression, html.ViewData);
+string modelName = ExpressionHelper.GetExpressionText(expression);
+
+string labelText = metadata.DisplayName ?? modelName;
+```
+
+First, we extract the property metadata using the `ModelMetadata.FromLambdaExpression` method. Then, we get the model name using the `ExpressionHelper.GetExpressionText` method. For simple models, the model name is equivalent to the property name.
+
+We then determine what label text to use based on the metadata and the model name. The `DisplayName` property of the metadata gets information from the `DisplayAttribute`. For example, if the property on the model was decorated with the `[Display(Name = "Full Name")]` attribute, then the `DisplayName` property will be populated. If it is populated, we use that as the label text. Otherwise, we just use the model name.
+
+## Building the Elements
+
+Now let's finish the implementation by putting in the code that constructs the html elements:
+
+```csharp
+
+var formGroup = new HtmlTag("div")
+ .AddClass("form-group");
+
+var label = new HtmlTag("label")
+ .AddClass("control-label")
+ .Attr("for", modelName)
+ .Text(labelText);
+
+var input = new HtmlTag("input")
+ .AddClass("form-control")
+ .Attr("name", modelName)
+ .Attr("type", "text");
+
+return formGroup
+ .Append(label)
+ .Append(input);
+```
+
+This is where we use the HtmlTags library. Notice how it lets us construct html elements using a fluent syntax. The method names are also similar to those used in JQuery.
+
+We are constructing three elements: a div, a label, and an input. For each element, we add the appropriate Bootstrap class. We also add attributes using the `modelName` and `labelText` variables we populated earlier. At the end, we append the label and input to the form group and return the form group.
+
+The final method implementation should look like this:
+
+```csharp
+
+public static HtmlTag FormGroupFor<TModel, TValue>(this HtmlHelper<TModel> html,
+ Expression<Func<TModel, TValue>> expression)
+{
+ ModelMetadata metadata = ModelMetadata.FromLambdaExpression(expression, html.ViewData);
+ string modelName = ExpressionHelper.GetExpressionText(expression);
+
+ string labelText = metadata.DisplayName ?? modelName;
+
+ var formGroup = new HtmlTag("div")
+ .AddClass("form-group");
+
+ var label = new HtmlTag("label")
+ .AddClass("control-label")
+ .Attr("for", modelName)
+ .Text(labelText);
+
+ var input = new HtmlTag("input")
+ .AddClass("form-control")
+ .Attr("name", modelName)
+ .Attr("type", "text");
+
+ return formGroup
+ .Append(label)
+ .Append(input);
+}
+```
+
+And that's it! Once we include the appropriate `using` statement (if any) in our view, we should be able to call our method like so:
+
+```xml
+
+@Html.FormGroupFor(m => m.Name)
+```
+
+And it should produce a form-group div with a label and an input inside with the appropriate attributes.
+
+## Extension Points
+
+Using this method will save us from a lot of typing and repetition in our views. But we can still take this further. By exploring the `ModelMetadata` class and / or using reflection to get attribute information from our models, we can place logic in our helper that will allow us to create customized elements. We can also create overloads that accept more parameters to support further customization. Following are some examples of what can be done:
+
+-   Supporting html validation attributes, such as `required`, `minlength`, and more.
+-   Supporting different input types, such as `password`, `email`, and more. We can also place logic for determining whether to render an `input` or a `textarea`.
+-   Supporting angular elements and attributes.
+-   Creating a method that will create an entire form using a single method call.
+-   And more!
+
+## Conclusion
+
+In this post we created a custom html helper extension method that creates a form group for us, which includes the appropriate label and input elements. We also took a quick look at how we can extract information from the model using the `ModelMetadata` class. Finally, we looked at a few ideas on how to extend our method to support a wider range of elements and attributes.

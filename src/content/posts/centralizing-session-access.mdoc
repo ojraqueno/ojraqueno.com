@@ -1,0 +1,77 @@
+---
+title: Centralizing Session Access
+description: >-
+  Storing and retrieving information from the session state is a common use case in most web applications. For example, user information might be retrieved from the database and then stored in the session upon log in…
+publishedAt: 2013-06-17
+draft: false
+tags:
+  - net
+  - asp-net
+  - c-sharp
+  - session
+originalUrl: https://ojdevelops.blogspot.com/2013/06/centralizing-session-access.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/32c06899a41f-centralizing-session-access.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/32c06899a41f-centralizing-session-access.jpg)
+
+Storing and retrieving information from the session state is a common use case in most web applications. For example, user information might be retrieved from the database and then stored in the session upon log in of a user. Following this approach, database calls that retrieve information about a user are reduced (ideally to one call only).
+
+## The Simple Way of Doing It
+
+In small or simple applications, retrieving from and assigning values to the session are done by directly accessing the Session object with typing the key:
+
+```csharp
+
+// Set session variable
+Session["MyVar"] = "Hello, world!";
+
+// Retrieve session variable
+string myVar = null;
+object sessionVar = Session["MyVar"];
+if (sessionVar != null)
+{
+ myVar = sessionVar.ToString();
+}
+```
+
+While accessing the session value this way works, it has the following disadvantages:
+
+1.  **Prone to error.** Even though session keys are case-insensitive, you could still mess up the spelling of the key by accidentally adding, deleting, or modifying the characters.
+2.  **Difficult to change name of session variable.** If instead of "MyVar" we replaced the key name with something else, we would have to look for all the places it was declared and replace it there.
+3.  **Weakly typed.** Session values have the type **object**. Therefore, to enable operations on the session values that are meaningful to the problem domain, they have to be converted to the correct type. Similar to the previous two points, this is error prone and hard to maintain.
+
+## A Better Way
+
+We can get rid of these disadvantages by making Session access the exclusive responsibility of a class. Below is an example of such a class.
+
+```csharp
+
+public sealed class SessionHelper
+{
+ private SessionHelper() { }
+ 
+ // Fully qualified namespace used here for clarity purposes
+ private static System.Web.SessionState.HttpSessionState Session { get { return System.Web.HttpContext.Current.Session; } }
+
+ // Session property: username (string)
+ public static string Username
+ {
+ get
+ {
+ if (Session["Username"] == null)
+ {
+ return String.Empty;
+ }
+
+ return Session["Username"].ToString();
+ }
+ set
+ {
+ Session["Username"] = value;
+ }
+ }
+}
+```
+
+Now the session variable is wrapped inside a property, which has an enforceable type. In addition, implementation details (such as the name of the session key or how to handle null values) are now handled by this class and not on the client, resulting in a better separation of concerns.
+
+In this post you have seen how to wrap session access in a class. I would recommend handling session variables in this manner (as opposed to direct access) in all applications regardless of size.

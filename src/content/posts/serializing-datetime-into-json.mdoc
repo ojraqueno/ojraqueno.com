@@ -1,0 +1,140 @@
+---
+title: Serializing DateTime into JSON
+description: >-
+  In my current project I ran into the requirement of serializing an object with a DateTime property into Json, specifically through the Json() method of the Controller class. I can't say it serialized pretty well though.
+publishedAt: 2013-06-05
+draft: false
+tags:
+  - net
+  - ajax
+  - asp-net
+  - c-sharp
+  - json
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2013/06/serializing-datetime-into-json.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4290fcb9b402-serializing-datetime-into-json.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4290fcb9b402-serializing-datetime-into-json.jpg)
+
+In my current project I ran into the requirement of serializing an object with a DateTime property into Json, specifically through the Json() method of the Controller class. I can't say it serialized pretty well though.
+
+From a DateTime value that looks like this in SQL server:
+
+```plaintext
+
+2013-06-05 20:37:53.157
+```
+
+It became this on the page:
+
+```plaintext
+
+/Date(1370435873157)/
+```
+
+So why the difference?
+
+The AJAX JSON serializer in ASP.NET encodes a DateTime instance as a JSON string in the following format: \\/Date(ticks)\\/ where ticks represents the number of milliseconds since January 1, 1970 in Universal Coordinated Time (UTC). The two forward slashes are escaped by the two backslashes, resulting in the long and cryptic number which popped up on my display. Unfortunately that number is not very readable, so I had to change it.
+
+Enter Json.NET. [Json.NET](http://james.newtonking.com/projects/json-net.aspx) is a "popular high-performance JSON network for .NET". You can see a tabular comparison between Json.NET, DataContractJsonSerializer, and JavaScriptSerializer on their home page. It's available through NuGet, so I was able to install it easily.
+
+Having installed Json.NET, I followed [RickyWan's post](http://wingkaiwan.com/2012/12/28/replacing-mvc-javascriptserializer-with-json-net-jsonserializer/) on how to create a custom JsonResult (aptly named JsonNetResult in the code sample) and how to set it up so that calling the Json() method on a controller would return a JsonNetResult instead of the default JsonResult. It involves overriding the Json() method in a base controller and then letting all controllers inherit from that instead, which is a common and useful technique in other situations as well.
+
+**Update** It seems that RickyWan's site is currently down, so I will post the relevant code here, with some slight modifications, inspired by [Matt Honeycutt](https://twitter.com/matthoneycutt)'s Pluralsight course [Build Your Own Application Framework with ASP.NET MVC 5](https://www.pluralsight.com/courses/build-application-framework-aspdotnet-mvc-5).
+
+## The BetterJsonResult Class
+
+The first thing we will create is a class that derives from `JsonResult`. We are doing this for easier integration with the MVC framework.
+
+```csharp
+
+public class BetterJsonResult : JsonResult
+{ 
+ public override void ExecuteResult(ControllerContext context)
+ {
+ CopyOfBaseClassImplementation(context);
+
+ if (Data == null) return;
+ 
+ var settings = new JsonSerializerSettings
+ {
+ // Sample settings; you can insert your own settings here
+ ContractResolver = new CamelCasePropertyNamesContractResolver(),
+ Converters = new JsonConverter[] { new StringEnumConverter() },
+ NullValueHandling = NullValueHandling.Ignore
+ };
+
+ context.HttpContext.Response.Write(JsonConvert.SerializeObject(Data, settings));
+ }
+
+ // Just copying the MVC framework's implementation
+ private void CopyOfBaseClassImplementation(ControllerContext context)
+ {
+ if (context == null) throw new ArgumentNullException(nameof(context));
+
+ var cannotGet = JsonRequestBehavior == JsonRequestBehavior.DenyGet && String.Equals(context.HttpContext.Request.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase);
+ if (cannotGet) throw new InvalidOperationException("GET access is not allowed. Change the JsonRequestBehavior if you need GET access.");
+
+ var response = context.HttpContext.Response;
+ response.ContentType = String.IsNullOrEmpty(ContentType) ? "application/json" : ContentType;
+
+ if (ContentEncoding != null)
+ {
+ response.ContentEncoding = ContentEncoding;
+ }
+ }
+}
+```
+
+The heart of this class lies inside the `ExecuteResult` method. There, we are using the `JsonConvert` class for serialization. The `JsonConvert` and `JsonSerializerSettings` classes are part of the JSON.NET library.
+
+We will also make a generic version of the BetterJsonResult class:
+
+```csharp
+
+public class BetterJsonResult<T> : BetterJsonResult
+{
+ public new T Data
+ {
+ get { return (T)base.Data; }
+ set { base.Data = value; }
+ }
+}
+```
+
+Finally, we will make our own controller which all our controllers will inherit from. In this base controller, we will add a method that returns an instance of the `BetterJsonResult` class.
+
+```csharp
+
+public class FrameworkController : Controller
+{
+ protected BetterJsonResult<T> BetterJson<T>(T data)
+ {
+ return new BetterJsonResult<T>
+ {
+ Data = data,
+ JsonRequestBehavior = JsonRequestBehavior.AllowGet
+ };
+ }
+}
+```
+
+Inside the controller we can call the `BetterJson` method instead of the regular `Json` one.
+
+```csharp
+
+public ActionResult MyAction()
+{
+ var myData = // get data from somewhere
+ 
+ return BetterJson(myData);
+}
+```
+
+JSON.NET serializes DateTime values into readable strings:
+
+```plaintext
+
+Jun 6, 2013 4:37:53 AM
+```
+
+Which is way more readable than showing the number of ticks between now and some 40 years ago.

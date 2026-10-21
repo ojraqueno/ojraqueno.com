@@ -1,0 +1,92 @@
+---
+title: Getting Started with Vue.js
+description: >-
+  I've been using AngularJS for the longest time. I decided to level up my front-end development knowledge, and part of that is learning about new front-end frameworks. Angular and React are the most popular ones these…
+publishedAt: 2018-06-18
+draft: false
+tags:
+  - vuejs
+originalUrl: https://ojdevelops.blogspot.com/2018/06/getting-started-with-vuejs.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c58c16070e01-vue.js_logo.svg.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c58c16070e01-vue.js_logo.svg.png)
+
+I've been using AngularJS for the longest time. I decided to level up my front-end development knowledge, and part of that is learning about new front-end frameworks. Angular and React are the most popular ones these days, but I also stumbled on Vue. I immediately liked it. In this post, I share how easy it is to get started using Vue. Even easier than AngularJS!
+
+## It's Very, Very Easy
+
+To get started using Vue, follow these steps:
+
+1\. Create a new HTML page and add a reference to the Vue script file. You can download a copy or reference it via a CDN:
+
+```xml
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+```
+
+2\. Create an element that Vue will manage. Normally this would be a `div`. Give it an id:
+
+```xml
+
+<div id="app">
+
+</div>
+```
+
+3\. Inside, create a data-binding target using curly brace syntax or mustaches, similar to what is used in other frameworks like AngularJS:
+
+```xml
+
+Hello, {{message}}!
+```
+
+4\. Through JavaScript, create an instance of `Vue`. In the object constructor, have a property called `el` whose value is the selector of the element created in step 2. Also, have a property called data which is an object whose property name/s must match the data-binding syntax in the HTML markup (eg. `message`) and whose value/s must be what you want to be data-bound (eg. `'World'`):
+
+```javascript
+
+<script>
+ var app = new Vue({
+ el: '#app', // selector of the container element
+ data: {
+ message: 'World' // value to be data-bound
+ }
+ });
+</script>
+```
+
+The entire HTML page could look something like this:
+
+```xml
+
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+ <title></title>
+ </head>
+ <body>
+ <div id="app">
+ Hello, {{message}}!
+ </div>
+ <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+ <script>
+ var app = new Vue({
+ el: '#app',
+ data: {
+ message: 'World'
+ }
+ });
+ </script>
+ </body>
+</html>
+```
+
+And that's it! When you open the page, you should see 'Hello, World!'.
+
+## What I Like About Vue
+
+What I like most about Vue is its simplicity and short learning curve. As we saw above, it's very easy to get started; there's no need to learn about new concepts, specially if coming from an AngularJS background.
+
+Another reason I like Vue is that it isn't opinionated regarding technical paradigms. You can use Vue with a SPA or a non-SPA site. You can use Vue with Webpack and/or TypeScript, and you can use it without those. This is in contrast with something like Angular, where the default is to use TypeScript and Webpack. That increases the learning curve by a lot.
+
+## Conclusion
+
+I've only recently started learning about Vue, and, as with everything, there's still much more to learn. But I'm really excited about this framework. It's not as popular as Angular or React, but I won't be surprised if it picks up more traction soon.

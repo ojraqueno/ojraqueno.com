@@ -1,0 +1,94 @@
+---
+title: "Azure Quickstart: SQL Azure"
+description: >-
+  In a previous post, we talked about hosting a web app with Azure app services . Now, we are going to see how to setup a SQL database on the Azure platform.
+publishedAt: 2018-06-16
+draft: false
+tags:
+  - azure
+  - sql
+originalUrl: https://ojdevelops.blogspot.com/2018/06/azure-quickstart-sql-azure.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c37e45052a53-azure-quickstart-sql-azure.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c37e45052a53-azure-quickstart-sql-azure.jpg)
+
+In a previous post, we talked about [hosting a web app with Azure app services](/blog/azure-quickstart-web-hosting-with-app/). Now, we are going to see how to setup a SQL database on the Azure platform.
+
+## Creating an Azure SQL Database
+
+To create an Azure SQL database, follow these steps:
+
+1\. Click on SQL databases on the hub on the left. That will take you to the SQL databases blade, where you can see your existing databases.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/570f7d6839d5-sql-databases.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/570f7d6839d5-sql-databases.png)
+
+2\. Click on the Add button or on the Create sql database button. The blade to create the SQL database will appear:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c722308f997e-add-new-database.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c722308f997e-add-new-database.png)
+
+3\. Fill in all of the required fields.
+
+-   **Database name**: This will be the name of the database, for use in the connection string.
+-   **Subscription**: This is the name of the subscription where this SQL database will be a part of.
+-   **Resource group**: This is the name of the resource group where this SQL database will be a part of.
+-   **Select source**: We are creating a new, empty database, so select Blank database.
+-   **Server**: This is the SQL Server instance where the database will live. One SQL Server instance can host multiple databases. Click Create a new server, and fill in the required fields (see list below).
+-   **Pricing tier**: Select the lowest tier, which is Basic at the time of this writing.
+-   **Collation**: Leave the default value.
+
+Fields for creating a SQL Server:
+
+-   **Server name**: The name of the server, for use in connection strings or for tools like SQL Server Management Studio.
+-   **Server admin login**: The SQL login username.
+-   **Password / confirm password**: The SQL login password. Take note of this password!
+-   **Location**: The location of the machine that will host the SQL Server instance. Choose a location that is near you or your end users.
+
+4\. Click on create. Azure will now create the SQL Server instance and the database, and you can see the progress by clicking on the bell icon on the right of the navigation bar.
+
+After a few moments, the notification message will change from "Deployment in progress" to "Deployment succeeded".
+
+Congratulations, your SQL database has now been provisioned!
+
+## Browsing to the Resource
+
+If you now click on SQL databases on the left hub, you should now see the SQL database listed. Click on it, and you will see something like this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/83566f41cdee-sql-database-overview.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/83566f41cdee-sql-database-overview.png)
+
+## Connecting to the Database Server via SQL Server Management Studio
+
+The database server is now online, and we should be able to connect to it via SSMS, just like a local database.
+
+Use these information when connecting to the database:
+
+-   **Server name**: Use this format for the server name: **tcp:YourServerName.database.windows.net,1433** where you replace YourServerName with the one you chose earlier.
+-   **Authentication**: SQL Server Authentication
+-   **Login**: The SQL admin username.
+-   **Password**: The SQL login password.
+
+## Adding a Firewall Rule via SQL Server Management Studio
+
+Now, your IP address should be whitelisted in Azure for you to be able to connect to the database. Whitelisting can be done via the Azure portal, but it can also be done directly in SSMS.
+
+When you try to log in with a non-whitelisted IP address, SSMS will prompt you to sign in to Azure:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bc2453470068-new-firewall-rule-ssms.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bc2453470068-new-firewall-rule-ssms.png)
+
+After signing in with your Azure account, you will have the opportunity to add a firewall rule with your computer's IP address:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3be8bae328c7-new-firewall-rule-ssms-signed-in.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3be8bae328c7-new-firewall-rule-ssms-signed-in.png)
+
+Upon clicking OK, the firewall rule will get created, and you should be able to finally log in to the server and inspect the database you created.
+
+## Using the Database in a Web App
+
+To use the database in a web app, we have to know the proper format of the connection string.
+
+Back at the SQL database overview, click on Show database connection strings:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7d5299a2d9b2-show-database-connection-strings.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7d5299a2d9b2-show-database-connection-strings.png)
+
+You will see several connection string formats for different providers, including one for ADO.NET. This is the one to use in a web.config file. Just make sure to substitute the username and password, as those are not filled in for you automatically.
+
+## Conclusion
+
+With cloud offerings such as Azure, it is very easy to get a SQL database up and running. This lowers the entry barrier of creating your very own web app.

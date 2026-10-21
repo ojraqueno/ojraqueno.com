@@ -1,0 +1,26 @@
+---
+title: How to Test Internal Methods in Visual Studio
+description: >-
+  Today I will show a very simple way on how to test internal methods in Visual Studio.
+publishedAt: 2013-09-02
+draft: false
+tags:
+  - net
+  - c-sharp
+  - nunit
+  - test
+  - visual-studio
+originalUrl: https://ojdevelops.blogspot.com/2013/09/how-to-test-internal-methods-in-visual.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/370150df1ffe-how-to-create-a-console-application-from-visual-studio-express-for-web.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/370150df1ffe-how-to-create-a-console-application-from-visual-studio-express-for-web.jpg)
+
+Today I will show a very simple way on how to test internal methods in Visual Studio.
+
+Let's say the internal methods to be tested are in an assembly named "MyApp", and the tests are located in an assembly named "MyApp.Tests". For the `MyApp` methods to be visible to the tests assembly, insert the following line in the AssemblyInfo file of MyApp:
+
+```csharp
+
+[assembly: InternalsVisibleTo("MyApp.Tests")]
+```
+
+With just this line of code, you will now be able to use and test the internal methods.

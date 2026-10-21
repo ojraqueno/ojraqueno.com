@@ -1,0 +1,86 @@
+---
+title: Creating Custom Html Helper Methods
+description: >-
+  HTML helper methods are used in Razor views to generate HTML markup in a strongly-typed, C-sharpy way. An example is @Html.LabelFor(m => m.Name) , which is used in a strongly-typed view whose model has a Name…
+publishedAt: 2015-11-21
+draft: false
+tags:
+  - asp-net
+  - c-sharp
+  - mvc
+  - razor
+originalUrl: https://ojdevelops.blogspot.com/2015/11/creating-custom-html-helper-methods.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/88daf48db5c3-creating-custom-html-helper-methods.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/88daf48db5c3-creating-custom-html-helper-methods.jpg)
+
+HTML helper methods are used in Razor views to generate HTML markup in a strongly-typed, C-sharpy way. An example is `@Html.LabelFor(m => m.Name)`, which is used in a strongly-typed view whose model has a `Name` property. This will generate a `label` element with the appropriate display name. In this post we will learn how to create a custom HTML helper.
+
+## The Scenario
+
+Suppose that we have a form with multiple labels and inputs using Twitter Bootstrap. All the labels are using the `control-label` class. This pattern will get repeated multiple times in the form:
+
+```csharp
+
+@Html.LabelFor(m => m.Name, new { @class = "control-label" })
+...
+@Html.LabelFor(m => m.Email, new { @class = "control-label" })
+...
+@Html.LabelFor(m => m.Phone, new { @class = "control-label" })
+...
+```
+
+What we want to do is to create custom helpers to eliminate the repetition. Something like this:
+
+```csharp
+
+@Html.BootstrapLabelFor(m => m.Name)
+...
+@Html.BootstrapLabelFor(m => m.Email)
+...
+@Html.BootstrapLabelFor(m => m.Phone)
+...
+```
+
+As you can see, that is much cleaner and more readable.
+
+## Creating the Helper
+
+It's easy and straightforward to create such a helper. In a nutshell, we will just need to add an extension method to the `HtmlHelper` class and invoke the method in our Razor view.
+
+First, we add a new class:
+
+```csharp
+
+public static class HtmlHelperExtensions
+{
+
+}
+```
+
+Remember that since we are building extension methods, the class has to be `static`.
+
+Next, we create the extension method:
+
+```csharp
+
+public static MvcHtmlString BootstrapLabelFor<TModel, TValue>(this HtmlHelper<TModel> html,
+ Expression<Func<TModel, TValue>> expression)
+{
+ object htmlAttributes = new
+ {
+ @class = "control-label"
+ };
+
+ return html.LabelFor(expression, htmlAttributes);
+}
+```
+
+The method signature is typical of HTML helper methods that can be invoked in a strongly-typed view. It has a return type of `MvcHtmlString` and takes in a generic `Expression` which will allow us to pass in a lambda expression representing a model property (ie. x => x.Name).
+
+In the implementation of the method, we are creating a new `object` that has a `@class` property with a value of `control-label`. That is the same object we are currently creating in the view. We are then just calling the built-in `LabelFor` helper method, again in the same fashion that we were doing in the view.
+
+And that's it! The helper method is complete and we can begin to use it in our Razor views. Just make sure to include the appropriate `using` statement in the view or in the view folder's `web.config` file.
+
+## Conclusion
+
+In this post we saw how to create a simple HTML helper that reduces the amount of noisy, repetitive code in the view. This just scratches the surface of what we can do with HTML helpers though. [Matt Honeycutt](http://trycatchfail.com/blog/) has an excellent Pluralsight course entitled [Build Your Own Application Framework with ASP.NET MVC 5](http://app.pluralsight.com/courses/build-application-framework-aspdotnet-mvc-5) where he does some very interesting things using helpers in the context of building an application framework. [TwitterBootstrapMVC](https://www.twitterbootstrapmvc.com/) is another project that provides a collection of Twitter Bootstrap HTML helpers.

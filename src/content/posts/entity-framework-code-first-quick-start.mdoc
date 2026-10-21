@@ -1,0 +1,154 @@
+---
+title: Entity Framework Code First Quick Start
+description: >-
+  Hi, in this post I will show you how to get started with using Entity Framework.
+publishedAt: 2013-10-15
+draft: false
+tags:
+  - net
+  - c-sharp
+  - entity-framework
+originalUrl: https://ojdevelops.blogspot.com/2013/10/entity-framework-code-first-quick-start.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b3fd68ed86b3-entity-framework-code-first-quick-start.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b3fd68ed86b3-entity-framework-code-first-quick-start.jpg)
+
+Hi, in this post I will show you how to get started with using Entity Framework.
+
+## What is Entity Framework?
+
+Entity Framework is an ORM (object-relational mapper) developed by Microsoft. ORM's abstract away the work needed for object-based languages (such as C#) to work with relational databases (such as SQL Server).
+
+Entity Framework Code First can free you from:
+
+-   Manually creating a database
+-   Creating stored procedures
+-   Managing ADO.NET classes (`SqlConnection`, `SqlCommand`, etc.)
+-   Writing mapping code (`SqlDataReader` -> objects, objects -> `SqlCommand`)
+
+Entity Framework does all of these for you.
+
+## What is "Code First"?
+
+There are three modes of development when using Entity Framework:
+
+-   **Code First** - you write classes (code) first. No existing database is required; Entity Framework will build the database and the tables based on the classes you write.
+-   **Model First** - similar to Code First, but instead of manually writing classes, you do them through a designer (think drag and drop).
+-   **Database First** - the reverse of Code First: there is already an existing database, then Entity Framework creates the classes based on the database structure.
+
+In this post, we will be working with the first option, Entity Framework Code First.
+
+## Getting Entity Framework
+
+To include the Entity Framework dll in your solution, you can simply download it through NuGet. By the way, I am using a console application with Visual Studio 2012 in this demo.
+
+## Writing the Code
+
+Since we're doing code first, we will write some code first.
+
+We will be using a simple `Person` class, with the following definition:
+
+```csharp
+
+public class Person
+{
+ public int Id { get; set; }
+ public string Name { get; set; }
+ public DateTime Birthday { get; set; }
+}
+```
+
+This class will represent a table row in the database.
+
+Next, we will create a "context" class. If the `Person` class represents a table row, then you can think of the context class as representing the database. Here is its definition:
+
+```csharp
+
+// Include this reference
+using System.Data.Entity;
+
+public class ExampleContext : DbContext
+{
+ public DbSet<Person> People { get; set; }
+}
+```
+
+Note that we inherited from the `DbContext` class. This allows us to take advantage of entity framework's functionality. Also notice the `DbSet<>` member. You can think of this member as representing a database table.
+
+Now that we have the database and a table represented, let's now build some queries. Let's add a couple of methods to our `Person` class:
+
+```csharp
+
+public class Person
+{
+ // ...
+
+ public static IList<Person> GetAll()
+ {
+ using (var db = new ExampleContext())
+ {
+ return db.Persons.ToList();
+ }
+ }
+
+ public void Save()
+ {
+ using (var db = new ExampleContext())
+ {
+ db.Persons.Add(this);
+ db.SaveChanges();
+ }
+ }
+}
+```
+
+We should be all set for a little demonstration.
+
+## Using the Code
+
+At this point we have all the classes set up, but we haven't done anything database-related. Entity framework will create the database for us as soon as we need it.
+
+Let's demonstrate inserting data. Type the following code and then run the project:
+
+var p = new Person
+{
+ Name = "John Smith",
+ Birthday = DateTime.Now
+};
+p.Save();
+
+Believe it or not, the `Person` has been saved in the database! To be sure, we can check the table contents.
+
+By default, entity framework uses the LocalDb as the data server. So, in order to see the database, we look at the SQL Server Object Explorer. Here is a screen grab taken from my machine:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9bb0c5792ea6-sqlserverobjectexplorer.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9bb0c5792ea6-sqlserverobjectexplorer.png)
+
+We can see that the database was created, and the name is the fully-qualified name of our context class.
+
+Further drilling down will reveal the table representing the `DbSet<Person>`. Let's take a look at that:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2f942bc96325-peopletable.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2f942bc96325-peopletable.png)
+
+The People table has been created, and each member was assigned an individual column. Not only that, notice that the Id column was automatically set as the primary key.
+
+Now we can finally check the data. Here is another screen grab showing the contents of that table:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1b2e28957e93-peopledata.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1b2e28957e93-peopledata.png)
+
+You can see that the entry has been successfully saved to the database.
+
+Now let's retrieve and display the data. Run the following code:
+
+```csharp
+
+foreach (var person in Person.GetAll())
+{
+ Console.WriteLine("{0} was born on {1}", person.Name,
+ person.Birthday);
+}
+```
+
+The output should be something like:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1ed2288d6165-display.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1ed2288d6165-display.png)
+
+Congratulations! You have now created your very first entity framework application.

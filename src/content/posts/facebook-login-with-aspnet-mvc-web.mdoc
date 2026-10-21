@@ -1,0 +1,131 @@
+---
+title: Facebook Login with ASP.NET MVC Web Applications
+description: >-
+  This post is a step-by-step guide on integrating Facebook login with an ASP.NET MVC Web Application. We will start from scratch and end with an application supporting Facebook login.
+publishedAt: 2016-09-19
+draft: false
+tags:
+  - asp-net
+  - facebook
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2016/09/facebook-login-with-aspnet-mvc-web.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e60816ba8978-facebook-login-with-asp.net-mvc-web-applications.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e60816ba8978-facebook-login-with-asp.net-mvc-web-applications.jpg)
+
+This post is a step-by-step guide on integrating Facebook login with an ASP.NET MVC Web Application. We will start from scratch and end with an application supporting Facebook login.
+
+## Why Facebook Login?
+
+Using Facebook (or another platform such as Twitter or Google) login provides the following advantages for the user and for you:
+
+-   No need for the user to remember another set of credentials. (If they're not using the same credentials everywhere, that is.)
+-   No need for the user to go through a registration process, shortening the time and effort from the state of being not part of your app to being part of your app. The easier your users can get into your app, the more likely they will.
+-   No need for you to handle things like password reset, two-factor authentication, etc.
+
+## Summary of Steps
+
+There are three steps to creating this kind of application:
+
+1.  Create an ASP.NET MVC Web Application.
+2.  Create a Facebook app.
+3.  Configure the MVC web app to use the settings provided by the Facebook app for login.
+
+## Step 1: Create an ASP.NET MVC Web Application
+
+This is pretty straightforward, just go to File > New Project > ASP.NET Web Application > MVC with authentication set to Individual User Accounts. The version of the .NET framework being used here is 4.6.
+
+## Step 2: Create a Facebook app
+
+These are the steps to create a Facebook app:
+
+1.  Go to [https://developers.facebook.com/](https://developers.facebook.com/) and log in.
+2.  On the upper right section of the screen, go to My Apps > Add a New App.
+3.  Fill in the Display Name and Contact Email, and choose "Apps for Pages" as the Category, then click "Create App ID".
+
+At this point you should be on a screen that looks like this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/152828c46426-new-facebook-app.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/152828c46426-new-facebook-app.png)
+
+Let's continue:
+
+4.  On the left sidebar, click Settings.
+5.  Copy the App ID and App Secret (you will need to click on the "Show" button) and set them aside for later use.
+6.  In the App Domains textbox, put "localhost". Note that you will need to replace this domain with the production domain when your MVC app is deployed.
+7.  Toward the bottom of the screen, click "Add Platform" > Website.
+8.  In the Site URl textbox, enter the URL of your MVC app as it runs on your machine (ex: http://localhost:55086)
+9.  Toward the bottom right of the screen, click "Save Changes".
+
+The Facebook app is now ready for use.
+
+## Configure the MVC web app to use the settings provided by the Facebook app for login
+
+Now let's have the MVC app use Facebook login. (Note: At the time of this writing, the Facebook API version is 2.7.) Here are the steps:
+
+1.  Install the NuGet package named `Facebook` (the one from Outercurve Foundation).
+2.  Go to App\_Start > `Startup.Auth.cs` and look for the block that begins with `app.UseFacebookAuthentication`.
+3.  Replace that entire code block with the following, supplying the Facebook App Id and App Secret where necessary:
+
+```csharp
+
+app.UseFacebookAuthentication(new FacebookAuthenticationOptions
+{
+ AppId = "[YOUR APP ID]",
+ AppSecret = "[YOUR APP SECRET]",
+ Scope = { "email" },
+ Provider = new FacebookAuthenticationProvider
+ {
+ OnAuthenticated = context =>
+ {
+ context.Identity.AddClaim(new System.Security.Claims.Claim("FacebookAccessToken", context.AccessToken));
+ return System.Threading.Tasks.Task.FromResult(true);
+ }
+ }
+});
+```
+
+At this point you should be able to run the app and do the Facebook login successfully. However, it's likely that you would want to get user information from Facebook (such as the first and last name, email, etc.) so I'm going to add a few extra steps:
+
+4.  Create a small container class to hold the Facebook-supplied user information. For example:
+
+```csharp
+
+public class FacebookUserInfo
+{
+ public string Email { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+}
+```
+
+5.  Go to `AccountController.cs` and insert the following code block at the beginning of the `Task<ActionResult> ExternalLoginCallback(string returnUrl)` method's body:
+
+```csharp
+
+var identity = AuthenticationManager.GetExternalIdentity(DefaultAuthenticationTypes.ExternalCookie);
+var accessToken = identity.FindFirstValue("FacebookAccessToken");
+dynamic userInfo = new FacebookClient(accessToken).Get("/me?fields=email,first_name,last_name");
+var facebookUserInfo = new FacebookUserInfo
+{
+ Email = userInfo["email"],
+ FirstName = userInfo["first_name"],
+ LastName = userInfo["last_name"]
+};
+```
+
+With that code block we can extract information supplied by Facebook (email, first name, and last name in this case) and save them in our own database. A complete list of the available fields can be found at: [https://developers.facebook.com/docs/facebook-login/permissions](https://developers.facebook.com/docs/facebook-login/permissions)
+
+## Testing It Out
+
+Now we can test our application. Here are the steps:
+
+1.  Put a breakpoint at the start of the `Task<ActionResult> ExternalLoginCallback(string returnUrl)` method and run the application in debug mode.
+2.  Go to the login screen. On the right side of the screen, you should see the "Use another service to log in" section, with Facebook as one of the options. Click on Facebook.
+3.  If you are not already logged in to Facebook on the browser where you are testing, a Facebook login page appears, where you must enter your Facebook username and password.
+4.  After logging in, a permissions page may appear, asking you to grant permissions to your Facebook app.
+5.  Once you grant permissions, control will return to your app, and the breakpoint we set should be hit. Go ahead and step through the lines and see how the Facebook information is retrieved.
+
+At this point, you have all the information you need to create a user account. By default, the MVC page takes you to the `ExternalLoginCallback` view, but you can change this behavior if you want to.
+
+## Conclusion
+
+This post serves as a step-by-step guide on how to implement Facebook login in an ASP.NET MVC Web Application.

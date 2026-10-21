@@ -1,0 +1,93 @@
+---
+title: "The Tyranny of Horizontal Architectures (and How You Might Escape): Part 1"
+description: >-
+  You've seen it before. You have been tasked to make a seemingly simple change on a web page. Add a couple of fields, perhaps. Or add new functionality, but still CRUD-like in nature. "Piece of cake," you say.
+publishedAt: 2018-07-09
+draft: false
+tags:
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2018/07/the-tyranny-of-horizontal-architectures.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/fd1b3b673b92-the-tyranny-of-horizontal-architectures.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/fd1b3b673b92-the-tyranny-of-horizontal-architectures.jpg)
+
+You've seen it before. You have been tasked to make a seemingly simple change on a web page. Add a couple of fields, perhaps. Or add new functionality, but still CRUD-like in nature. "Piece of cake," you say.
+
+You then proceed to make a change to the HTML. Then to the viewmodel. Then to the business logic layer, which I will also call service layer. Then to the repository layer. Then to the database. (You could also do it in reverse.) All those steps just to add a couple of fields. Which is kind of okay, maybe no big deal. But, as the infomercial says, "Wait, there's more!"
+
+## Exhibit A: Implementing Functionality Involving Multiple Entities
+
+Before we immerse ourselves in the madness, let's set up the domain: an online retail site.
+
+In your database, there are `Product` and `Order` tables, which have a many-to-many relationship between them. You are following a data-centric N-tier architecture, and therefore there is a repository layer with classes such as `ProductRepository` and `OrderRepository`. The product repository contains methods for reading and writing to the product table, and the order repository contains methods for reading and writing to the orders table. You also have a business logic layer with classes such as `ProductService` and `OrderService`. The web app architecture is not that important, but let's say it's written in ASP.NET MVC.
+
+Now, these are the tasks assigned to you. Can you identify what parts of the application to change? Specifically, do you change the Product-related classes, the Order-related classes, or do something else entirely? Think about those questions as you read the tasks:
+
+1.  Add a new product.
+2.  Retrieve all pending orders of a product.
+3.  Check which products had the most associated orders in the last 7 days.
+
+What are your answers? Here's how one could think about it:
+
+1\. Add a new product - *This one's a gimme. ProductService / ProductRepository, for sure.*  
+2\. Retrieve all pending orders of a product. - *Hmm, this one's a bit tougher. The input is related to products, so maybe change the Product classes? But the output is related to orders... I'm not really sure, but I have to finish this fast. I think I'll go with changing the OrderService / OrderRepository for this one.*  
+3\. Check which products had the most associated orders in the last 7 days. - *Well this is a bit similar to number 2. Maybe I'll stuff it in the OrderService / OrderRepository. But it's getting crowded there... Aha, I have an idea! I'll just create new classes called ProductOrderService and ProductOrderRepository. Or maybe they should be named OrderProduct? I guess I'll just do a coin toss.*
+
+After a long debate with yourself, and possibly with other people, you settle for a design and go ahead with its implementation. You go through the motions of changing the database, the repository layer, the service layer, and any other layers that might be involved.
+
+All the while, you are wondering if you did the right thing, or if this decision will not come back to haunt you or someone else down the road.
+
+## Exhibit B: Implementing Functionality that is Very Similar to Existing Functionality
+
+Let's say that there's existing functionality to fetch the newest products. This is used in Page X. The signatures in the product service and repository might look like `IEnumerable<Product> GetNewestProducts();`
+
+Now, on Page Y, you need to display the newest products as well as how many orders each one has. How would you modify the code to achieve this?
+
+Some common choices are:
+
+1.  Modify the existing method by changing the implementation to cover the widest use case. In our example, that means changing the implementation of GetNewestProducts so that it retrieves all the associated order counts. Both Page X and Page Y would then use that same method.
+2.  Modify the existing method by passing a flag argument whose value will dictate the implementation. In our example, that could mean passing a boolean parameter indicating if the associated order count should be retrieved. Page A would pass false and Page B would pass true.
+3.  Create a different method altogether.
+
+Which method would you go with?
+
+I find that for a small change like the one I described above, developers typically opt to go with either option 1 or option 2.
+
+One big reason is that they're usually easier to implement. For option 1, all you have to do is add an Include or JOIN statement and logic for summing. For option 2, you just add an if switch. You can even set a default value for the boolean parameter so that Page X does not need to change how it calls the method.
+
+Another reason is that it gives a chance to reuse an existing service / repository method. Reuse is touted as one of the benefits of designing using layers, and it feels good to see that benefit in action.
+
+Now, if you have been developing software with layered architectures for any reasonable amount of time, you know all the bad things that could happen here.
+
+For example, you come across a feature where it's not clear-cut whether it's better to write a new method or not. You spend an inordinate amount of time deciding what to do, and may still feel discontent with whatever implementation you went ahead with.
+
+More commonly, you come across multiple variants of the same method where the implementation (widest use case or flag argument) gets mixed and matched, leading to code that's a nightmare to change.
+
+In addition, both of those the two options are, in the first place, code smells. It's true that you get the benefit of reuse, but you also get the downside of tight coupling.
+
+With the widest use case implementation, you get the code smell of a client depending on functionality it doesn't need: Page X doesn't need order counts, but gets them anyway. With the flag argument implementation, you get method signatures that are difficult to reason about and change.
+
+## Exhibit C: Look at the Size of It!
+
+Let's face it: software can get, and is often, complex. What this means for our code is that we can end up with business logic layers or repository layers that have dozens of methods on them. Business logic layer methods are often accompanied by corresponding repository layer methods, so as one layer grows, the other grows with it.
+
+We can get clever by implementing generic repositories, but that breaks as soon as an unsupported scenario comes up, which comes too early too often.
+
+And what about the code in the web app? Depending on the extent of reuse, MVC controller actions can each also have a corresponding method in the business logic layer.
+
+Now, having a lot of methods doesn't necessarily make for a bad design. We have to look at the context: are all the methods related to one another, in an abstraction that makes sense?
+
+The "in an abstraction that makes sense" part is key here. One could argue that all the methods are related, since they all deal with a single entity. But is that how we should be thinking about the design?
+
+If we are just talking about purely CRUD operations that deal with one entity at a time, without associated business logic, then yes, data-centric abstractions make sense. But for more complex operations, a new way of coming up with abstractions might just be warranted.
+
+## Conclusion
+
+You're still with me; that must mean that you've gone through one or all of those issues!
+
+For the longest time, I thought that nothing could be done to change how things were. Last I checked, N-tier architectures are still widely being taught. So they must be good, right? I concluded that the problem must be with me, and not with the design. Still, there was a nagging feeling that there had to be a better way.
+
+The good news is that there is. Stay tuned for the second part of this series as I detail how I escaped, and how you can, too.
+
+(P.S. - I'll also reveal why I used a picture of a lasagna here. :))
+
+UPDATE: The second part is now out! [View it here](/blog/the-tyranny-of-horizontal-architectures2/).

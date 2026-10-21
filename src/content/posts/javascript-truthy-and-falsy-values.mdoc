@@ -1,0 +1,44 @@
+---
+title: "Javascript: Truthy and Falsy Values"
+description: >-
+  I used to wonder what this Javascript code fragment means:
+publishedAt: 2013-09-11
+draft: false
+tags:
+  - javascript
+originalUrl: https://ojdevelops.blogspot.com/2013/09/javascript-truthy-and-falsy-values.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b587cd10ffe6-javascript-truthy-and-falsy-values.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b587cd10ffe6-javascript-truthy-and-falsy-values.jpg)
+
+I used to wonder what this Javascript code fragment means:
+
+```javascript
+
+var myElement = document.getElementById('id');
+
+if (myElement)
+{
+ // some statements here
+}
+```
+
+Coming from a C# background, I thought that only boolean values or variables with a boolean type could be the argument for an `if` statement. After a bit of experimentation I found out that the block after the `if` statement will get executed if an element with that id is found. But I still didn't understand why Javascript behaves that way.
+
+## 'Truthy' and 'Falsy' Values
+
+I am not sure if 'truthy' and 'falsy' are real words in the dictionary, but they are very real in the Javascript world. As the name implies, *truthy* values evaluate to true, while *falsy* values evaluate to false. They do not necessarily have to be booleans in order to be evaluatable.
+
+Here are the five falsy values:
+
+-   `false`
+-   `null`
+-   `undefined`
+-   The empty string `''`
+-   The number `0`
+-   The number `NaN`
+
+All other values are truthy, including the string `'false'` and all objects.
+
+In the above example, `myElement` will be `null` if an element with that id is not found, and it will be an `object` if it finds one. The above `if` works because `null` is a falsy value, while `object` is a truthy value.
+
+So that's what it was about! The next you encounter a weird Javascript `if` statement, remember truthy and falsy values. It might just save you a little time and/or hair-pulling session.

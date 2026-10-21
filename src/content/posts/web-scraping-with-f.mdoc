@@ -1,0 +1,104 @@
+---
+title: "Web Scraping with F#"
+description: >-
+  Web scraping is defined as getting and saving information from an HTML page through a program. In this post we will leverage F# and the HTML type provider to do web scraping.
+publishedAt: 2016-03-29
+draft: false
+tags:
+  - f-sharp
+  - type-provider
+  - web-scraping
+originalUrl: https://ojdevelops.blogspot.com/2016/03/web-scraping-with-f.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/63534b155fd8-web-scraping-with-f-sharp.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/63534b155fd8-web-scraping-with-f-sharp.jpg)
+
+Web scraping is defined as getting and saving information from an HTML page through a program. In this post we will leverage F# and the HTML type provider to do web scraping.
+
+## F# not C#?
+
+F# is a functional-first programming language that is built on top of the .NET framework. Using F# (and the HTML type provider) will enable us to quickly get up and running with working with HTML pages. C# is my primary language, but if we use C#, we would have to create a lot more boilerplate code before we can begin scraping. We will come back to this point later, but for now let us start working on the F# scraper.
+
+## Prerequisites
+
+Before we begin, we would need to download and install the `FSharp.Data` package from NuGet. The package contains a lot of libraries that help make working with data easier. It includes the HTML type provider, which is what we will be using for our demo.
+
+## Creating the Type
+
+For our demo we will be scraping a Google search results page. We will use the following URL, which is a search results page for "albert einstein":
+
+```plaintext
+
+https://www.google.com/search?q=albert+einstein
+```
+
+In our F# program, we will use the HTML type provider to create types that represent the search results page. To do that, we declare a type and use the search results url as a generic argument to the `HTMLProvider`:
+
+```javascript
+
+type GoogleSearchResultPage = HtmlProvider<"https://www.google.com/search?q=albert+einstein">
+```
+
+That first step will let the provider know about the structure of the HTML page, and it will create the appropriate members that will let us access the page's information in a nice way.
+
+Next we will load an actual page from that type and load it into a value:
+
+```javascript
+
+let firstPage = GoogleSearchResultPage.Load("https://www.google.com/search?q=albert+einstein")
+```
+
+Here we are using the `Load` method to bring down the actual contents of the page.
+
+If you have noticed, we used the same url there as when we declared the type initially. But they don't have to be the same url. When we declared the type, the url there is used to detect the structure / schema of the data. In the case of the `Load` method, the url there is used to find the target page from which we will actually be downloading the data.
+
+What this means is that, for example, to load the second page of the search results, you can use the same `GoogleSearchResultPage` type we declared above, because the second page of results has (mostly) the same schema as the first page. There is no need to create another `GoogleSearchResultPage` type and use the url of the second page there. However, when using the `Load` method, that is the time that we will use the actual url of the second page of results:
+
+```javascript
+
+let secondPage = GoogleSearchResultPage.Load("https://www.google.com/search?q=albert+einstein&start=10")
+```
+
+For now, let us focus on the first page of search results and get the data from there.
+
+## Scraping the Search Results
+
+So what we want the program to do now is to read the search results page and process it in some way. In this demo we will just print out the titles of each search result.
+
+Using the browser's developer tools, we can inspect the source of the HTML page and see what the search result titles have in common. For example, they might all have the same class or be rendered using the same element. Using this information, we will know what to look for when we are accessing the `firstPage` type we created.
+
+As it turns out, all the search result titles are rendered with an `<h3>` tag and all have a class called "r". So, we will use this information for filtering. Then, we will print out the titles to the console:
+
+```javascript
+
+firstPage.Html.Descendants()
+|> Seq.filter (fun n -> n.HasName("h3") && n.HasClass("r"))
+|> Seq.iter (fun n -> printfn "%s" (n.InnerText()))
+```
+
+This will produce the following result:
+
+```plaintext
+
+Images for albert einstein
+Albert Einstein - Wikipedia, the free encyclopedia
+Albert Einstein - Biographical - Nobelprize.org
+Albert Einstein - Physicist, Scientist - Biography.com
+The Official Licensing Site of Albert Einstein
+Albert Einstein - Facts & Summary - HISTORY.com
+Albert Einstein Quotes - BrainyQuote
+Albert Einstein (Author of Relativity) - Goodreads
+The Albert Einstein Archives at The Hebrew University of Jerusalem ...
+Albert Einstein Online - Morgan Friedman
+```
+
+As you can see, we have successfully printed the titles of each search result. There is a stray result included (the first one called "Images for albert einstein"), but we should be able to exclude that if we improve our filtering algorithm.
+
+## Comparison vs C#
+
+So far, what we have achieved may not seem much, as we are simply printing some lines to the console. But when we look at this from a code perspective, we see that we have done a lot in just a little amount of code.
+
+As I mentioned before, if we had used C#, there would be a lot of boilerplate code involved. That is, we would have to create numerous classes to represent the elements on the HTML page. We would then use some sort of mapper or deserializer to load up the classes using raw HTML data. Using scraper libraries and tools will greatly help in this effort, but overall, using F# and the HTML type provider is simpler and faster.
+
+## Conclusion
+
+In this post we made a simple scraper that got information from a Google search results page. We saw how easy it is to do this using F# and the HTML type provider. The HTML type provider lives in the FSharp.Data package, which also includes other type providers and utilities for making working with data easier.

@@ -1,0 +1,52 @@
+---
+title: Introduction to AngularJS
+description: >-
+  If you've been reading about javascript frameworks then you're probably seen AngularJS. AngularJS is a javascript framework developed by Google. It supports a MVC pattern and handles two-way data binding between the…
+publishedAt: 2013-05-06
+draft: false
+tags:
+  - angularjs
+  - javascript
+originalUrl: https://ojdevelops.blogspot.com/2013/05/introduction-to-angularjs.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f2b56fa00adc-introduction-to-angularjs.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f2b56fa00adc-introduction-to-angularjs.jpg)
+
+If you've been reading about javascript frameworks then you're probably seen AngularJS. AngularJS is a javascript framework developed by Google. It supports a MVC pattern and handles two-way data binding between the model and the view. Aside from two-way data binding, it also has support for declaring new html syntax, validation, routing, and more. In this post we will talk about the data binding capability.
+
+## Setting Up the Site
+
+First off, we need to have a reference to the AngularJS file, which you can download from [here](http://angularjs.org/). In this example I downloaded the Uncompressed build of the Stable branch (1.0.6).
+
+Then we create a simple html file:
+
+```xml
+
+<html ng-app>
+<head>
+ <title>Index</title>
+ <script type="text/javascript" src="angular.js"></script>
+</head>
+<body>
+ <input type="text" ng-model="myInput" />
+ {{ myInput }}
+</body>
+</html>
+```
+
+Go ahead and open the site. You should see just a simple textbox.
+
+Now try typing into the textbox and watch what happens. What you type in the textbox automatically appears beside it. **It's magic!**
+
+## How It Works
+
+Well, it's not really magic. It's AngularJS data binding in action. Let's take a look at how it all works.
+
+There are only three things that are new in the file: the **ng-app** attribute, the **ng-model** attribute, and the **double curly braces**.
+
+The **ng-app** attribute tells AngularJS what the scope of the Angular application is. In this case, it will be the entire html file. This attribute is required in all Angular applications. Including this attribute is more of a setup step rather than affecting actual behavior (though of course no behavior will happen if this step is skipped).
+
+Now let's look at the **ng-model** attribute. In the first paragraph I mentioned that AngularJS supports an MVC pattern and data binding. This is the syntax of binding an input control to a model called **myInput**. It's basically saying: "Whatever gets written to this textbox will also be the value of the myInput variable, and vice-versa".
+
+Finally, we have the **double curly braces**. This is a binding from the model to the view. It's saying: "Whatever the value of the myInput variable is, that will also be my value".
+
+Congratulations, you have now made your first Angular application!

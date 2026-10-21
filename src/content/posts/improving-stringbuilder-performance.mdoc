@@ -1,0 +1,37 @@
+---
+title: Improving Stringbuilder Performance
+description: >-
+  In one of our projects we had a requirement to produce a .csv file. In the solution I implemented, I used the StringBuilder class to create the contents of the csv.
+publishedAt: 2013-04-18
+draft: false
+tags:
+  - net
+  - c-sharp
+  - stringbuilder
+originalUrl: https://ojdevelops.blogspot.com/2013/04/improving-stringbuilder-performance.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2c19628c2907-improving-stringbuilder-performance.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2c19628c2907-improving-stringbuilder-performance.jpg)
+
+In one of our projects we had a requirement to produce a .csv file. In the solution I implemented, I used the StringBuilder class to create the contents of the csv.
+
+It worked great, however it took more than one minute to create the file. What was wrong?
+
+After some tinkering, I found that initializing the StringBuilder capacity in the constructor improved the speed. From more than a minute, the process now took under 10 seconds!
+
+```csharp
+
+public sealed class CSVReport()
+{
+ private StringBuilder csv;
+ private const int ESTIMATED_NUMBER_OF_CHARACTERS_PER_ROW = 400;
+ private const int ESTIMATED_NUMBER_OF_ROWS = 3000;
+
+ public CSVReport()
+ {
+ // Set the string builder capacity for optimization purposes
+ csv = new StringBuilder(ESTIMATED_NUMBER_OF_CHARACTERS_PER_ROW * ESTIMATED_NUMBER_OF_ROWS);
+ }
+}
+```
+
+So remember, to improve StringBuilder performance specially for cases where there are a large number of objects to append, initialize the StringBuilder with the capacity in the constructor.

@@ -1,0 +1,103 @@
+---
+title: Creating a Generic Lookup Service
+description: >-
+  In a previous post I talked about how we can manage lookup tables with Entity Framework Code First . In that post I suggested using the primary key directly to check for a specific lookup, rather than introducing an…
+publishedAt: 2016-04-16
+draft: false
+tags:
+  - c-sharp
+  - design
+  - entity-framework
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2016/04/creating-generic-lookup-service.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2c454770f66d-creating-a-generic-lookup-service.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2c454770f66d-creating-a-generic-lookup-service.jpg)
+
+In a previous post I talked about how we can [manage lookup tables with Entity Framework Code First](/blog/managing-lookup-tables-with-entity/). In that post I suggested using the primary key directly to check for a specific lookup, rather than introducing an arbitrary column that will serve as an identifier. In this post I will talk about how we can make a generic lookup service to simplify how we show lookup values in, say, dropdown lists.
+
+## The Background
+
+Lookup entities often appear as items in a select list. What I often see in code is that there is one service created for each lookup class. Some examples are:
+
+-   `ProvinceService`
+-   `AccountTypeService`
+-   `OrderStatusService`
+
+Then, each of those services would have a method that gets all the entries for purposes of populating a dropdown list. They all tend to have the same logic and structure, so what we can do is create a single service that would return what we need to populate dropdown lists.
+
+Fortunately, it's quite straightforward to do this. The first step is to introduce an interface.
+
+## Introducing a Common Interface
+
+So first we need to have all of our lookup entities (`Province`, `AccountType`, `OrderStatus`, etc.) share a common interface. That way, we will be able to deal with them in a consistent manner.
+
+We can start with an interface like this:
+
+```csharp
+
+public interface ILookup
+{
+ int Id { get; set; }
+ string Text { get; set; }
+}
+```
+
+The interface is very simple, containing only two properties. `Id` is the value that would appear in the dropdown and would be the entity's primary key. `Text` is the text that would eventually show in the dropdown list.
+
+We will have all of our lookup entities implement this interface. For example:
+
+```csharp
+
+public class Province : ILookup
+{
+ public int Id { get; set; }
+ public string Text { get; set; }
+
+ // Possibly other properties
+}
+```
+
+The next step is to create a service that would be able to access the lookup list entities.
+
+## Creating the Service
+
+So we can introduce a `LookupService` class that knows how to get a list of any kind of lookup entity. The key is a generic method that works with our `DbContext` class. It would look something like this:
+
+```csharp
+
+public IEnumerable<ILookup> GetAllLookupItems<T>() where T : class, ILookup
+{
+ using (var db = new ApplicationContext())
+ {
+ return db.Set<T>().AsNoTracking().ToList();
+ }
+}
+```
+
+This short method is all we need. The important pieces here are the generic constraints. The `class` constraint enables us to use the `Set<T>` method on our context class. The `ILookup` constraint enables us to return any type of lookup entity list, as long as the entity implements the `ILookup` interface.
+
+We also used the `AsNoTracking` method to improve performance as well as the `ToList` method at the end so that Entity Framework executes the query immediately.
+
+We can use the `LookupService` like this:
+
+```csharp
+
+var lookupService = new LookupService();
+
+var orderStatuses = lookupService.GetAllLookupItems<OrderStatus>();
+// orderStatuses would be an enumerable of ILookup items
+// That is, an enumerable of items containing Id and Text properties
+
+var accountTypes = lookupService.GetAllLookupItems<AccountType>();
+// accountTypes would also be an enumerable of ILookup items
+```
+
+From here, we can do anything we want with our `orderStatuses`. If we are using the MVC framework's HTML helpers, we can create a `SelectList` out of it. Or, we can return it directly as a JSON result.
+
+The key point is that **we have created a centralized service that is responsible for querying lookup items**. If ever we need to introduce a new lookup entity, all we need to do is have it implement the `ILookup` interface. We would not need to create a separate service for it anymore (at least not for the purposes of creating a dropdown list for it).
+
+By harnessing the power of interfaces and generics, we have created a mini-framework for lookups that saves us a lot of time.
+
+## Conclusion
+
+In this post we talked about how we can create a generic service that can retrieve lookup entity items that would work across all types of lookup entities. This eliminates the need to create a separate service for each lookup entity.

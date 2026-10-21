@@ -1,0 +1,200 @@
+---
+title: Configuration in ASP.NET Core
+description: >-
+  Lots have changed in the new ASP.NET Core world. From the project structure to the hosting model to the improved Razor engine, the Microsoft team introduced a slew of changes that is more apt for modern web…
+publishedAt: 2016-10-16
+draft: false
+tags:
+  - asp-net-core
+  - configuration
+originalUrl: https://ojdevelops.blogspot.com/2016/10/configuration-in-aspnet-core.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/eb4224192162-configuration-in-asp.net-core.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/eb4224192162-configuration-in-asp.net-core.jpg)
+
+Lots have changed in the new ASP.NET Core world. From the project structure to the hosting model to the improved Razor engine, the Microsoft team introduced a slew of changes that is more apt for modern web development geared toward the cloud.
+
+One of the big changes is the configuration model. In a non-core ASP.NET project, we store configuration settings in the `appsettings` section of `web.config`. This is no longer the case in ASP.NET core projects. In this post we will take a detailed look at the new configuration model.
+
+## NuGet Packages for Configuration
+
+In ASP.NET Core, all functionality comes in NuGet packages. This includes configuration. In a non-core ASP.NET project, the `web.config` file (with the `appsettings` section inside) is available and ready to use from the beginning. In an ASP.NET core project, configuration functionality can only be used if some specific NuGet packages are installed.
+
+These are some of the NuGet packages that we need:
+
+-   `Microsoft.Extensions.Configuration.Json` - for enabling configuration sourcing from JSON files.
+-   `Microsoft.Extensions.Configuration.EnvironmentVariables` - for enabling configuration sourcing from environment variables.
+-   `Microsoft.Extensions.Configuration.UserSecrets` - for enabling working with user secrets.
+
+Fortunately, all of these packages are already referenced when going through File > New > Project > ASP.NET Core Web Application using the Web Application template.
+
+Let's look at how these packages are used.
+
+## Startup.cs
+
+In a non-core ASP.NET project, all startup code are located in `Global.asax.cs`. In ASP.NET core projects, `Global.asax.cs` is gone. Instead, all startup code are now located in a class called `Startup.cs`. This is a class that, by convention, the framework will look for when starting the application.
+
+One of the many things that happen in `Startup.cs` is the setup of configuration. In fact, that is one of the very first things it does. Let's look at the relevant section:
+
+```csharp
+
+public Startup(IHostingEnvironment env)
+{
+ var builder = new ConfigurationBuilder()
+ .SetBasePath(env.ContentRootPath)
+ .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+ .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
+
+ if (env.IsDevelopment())
+ {
+ // For more details on using the user secret store see
+ // http://go.microsoft.com/fwlink/?LinkID=532709
+ builder.AddUserSecrets();
+ }
+
+ builder.AddEnvironmentVariables();
+ Configuration = builder.Build();
+}
+
+public IConfigurationRoot Configuration { get; }
+```
+
+Let's take a look at this section in more detail.
+
+#### Dependency Injection in the Constructor
+
+Dependency injection is "baked in" in an ASP.NET Core web application. There is no need to install a separate package for dependency injection, though you can use one if you wanted to. In addition, most of the components that make up the ASP.NET Core project are available for injection. This includes the component `IHostingEnvironemnt`, which we see being injected in the constructor.
+
+The `ContentRootPath` property of `IHostingEnvironment` returns the root of the application folder. That is, it returns the folder where the `project.json` file is located. This is important because we will be placing our JSON configuration file/s in the root folder as well.
+
+Another interesting member of `IHostingEnvironment` is a method called `IsDevelopment()`. This returns `true` if the environment is Development and false otherwise. Speaking of environments, there are also `IsStaging()` and `IsProduction()` methods, which return `true` if the environment is Staging or Production, respectively. There is also a catch-all `IsEnvironment()` method which takes an environment name as a variable.
+
+#### ConfigurationBuilder
+
+The `ConfigurationBuilder` class lives in the `Microsoft.Extensions.Configuration` namespace, which is a dependency of both `Microsoft.Extensions.Configuration.Json` and `Microsoft.Extensions.Configuration.EnvironmentVariables`. Although that package is not referenced directly, it was still brought down because at least one package that was referenced directly had a dependency on it.
+
+The goal is to get an instance of a class implementing `IConfigurationRoot`, which knows how to read values from different configuration sources. To achieve this goal, a series of extension methods chained together using a fluent syntax are used on top of a new instance of the `ConfigurationBuilder` class.
+
+The first method to be called in the chain is `SetBasePath`. This method tells the framework where to look for configuration files. Passing the `env.ContentRootPath` as the parameter tells the configuration root to look for configuration files in the root of the folder, as we discussed earlier.
+
+Next, there are two calls to `AddJsonFile()`. These methods don't actually add JSON files; rather, they tell the configuration root to look for configuration settings in already existing JSON files. The JSON files have to be added manually. In the ASP.NET Core Web Application template, there is already an `appsettings.json` file that's been added for us.
+
+Let's take a quick peek at the `appsettings.json` file:
+
+```javascript
+
+{
+ "ConnectionStrings": {
+ "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=aspnet-CoreWebApplication-76015b7e-9cd7-4bdd-a6c8-85b043d7ff3c;Trusted_Connection=True;MultipleActiveResultSets=true"
+ },
+ "Logging": {
+ "IncludeScopes": false,
+ "LogLevel": {
+ "Default": "Debug",
+ "System": "Information",
+ "Microsoft": "Information"
+ }
+ }
+}
+```
+
+This is a regular JSON file with a hierarchical key-value structure with some default values already populated for us. Later we will see how to get configuration values from this file, but I want to talk about how this format compares to the `appsettings` section we would find in `web.config`. I believe the advantage of this format is that it allows nested configuration values, which makes it easier to see which settings are related.
+
+The `AddUserSecrets()` is the next to be called, but only if the environment is development. We will delve into user secrets in more detail later. But the gist is that user secrets provide the ability to access secret configuration settings in a development environment.
+
+The calls to `AddEnvironmentVariables()` and `Build()` finish off the builder. The configuration root can look for configuration information in many different places and the `AddEnvironmentVariables()` method tells it to look for configuration sources in the environment variables together with any previously set configuration sources.
+
+The intent is for environment variable values to win over any `appsettings.json` values with the same key. That is, if configuration values are set both in `appsettings.json` and in environment variables, the application will use the setting from the environment variables. That is why the call to `AddEnvironmentVariables()` was made at the end, after the calls to `AddJsonFile()`.
+
+Calling the `Build()` method finalizes construction and returns an instance of `IConfigurationRoot`. The instance is then saved in a property to make it available to the rest of the class.
+
+## Accessing Configuration Values from JSON files
+
+The `IConfigurationRoot` interface provides methods to access configuration values. In fact, it is already used in a couple of places in `Startup.cs`.
+
+#### Accessing the Connection String
+
+We see the connection string being accessed inside the `ConfigureServices` method by means of the `GetConnectionString` method. That method looks for a key named **ConnectionStrings** in the configuration source and returns the value matching the key passed in as a parameter. So, calling `GetConnectionString("DefaultConnection")` returns the value of **DefaultConnection** under the **ConnectionStrings** section.
+
+#### Accessing Arbitrary Configuration Values
+
+Arbitrary configuration values can be accessed by using the `GetSection` method. For example, to access the value of **IncludeScopes** inside the **Logging** section, we do:
+
+```csharp
+
+Configuration.GetSection("Logging")["IncludeScopes"]
+```
+
+For nested configuration values, `GetSection` can be called multiple times, each time drilling down to the level below. For example, to access the value of **Default** under **LogLevel**, which in turn is under **Logging**, we can do:
+
+```csharp
+
+Configuration.GetSection("Logging").GetSection("LogLevel")["Default"]
+```
+
+Instead of calling `GetSection` multiple times, we can use the shorthand form wherein we use colons to delimit each section. The above code could then look like this:
+
+```csharp
+
+Configuration.GetSection("Logging:LogLevel")["Default"]
+```
+
+Or, using the `Value` property, this:
+
+```csharp
+
+Configuration.GetSection("Logging:LogLevel:Default").Value
+```
+
+## Accessing Configuration Values from Environment Variables
+
+Environment variables are another possible source of configuration values. These are values that are not stored in the JSON file but are stored on the machine. In Windows 10, for example, you can view and edit the environment variables used by the operating system by searching for "Edit the system environment variables".
+
+Environment variables can be accessed using the same `GetSection` method used to access configuration values from JSON files. To demonstrate this, let's access the environment variable representing the environment (ie. Development, Staging, or Production).
+
+Right click on the web project, then go to Properties. Then, click on the Debug tab on the left. On the right pane, the environment variables are now visible. There should be one entry there whose name is **"ASPNETCORE\_ENVIRONMENT"** and whose value is **"Development"**. To access this environment variable, we can use the `GetSection` method:
+
+```csharp
+
+Configuration.GetSection("ASPNETCORE_ENVIRONMENT").Value
+```
+
+## Accessing Configuration Values from User Secrets
+
+What is a user secret? It is a sensitive piece of information that you don't want to store anywhere in code or in source control. Examples of user secrets are third party keys, connection strings, or any information that could be a security risk if accessed by a non-authorized entity.
+
+Instead of being stored in source control, user secrets can be set as environment variables on the host where the web app is deployed. There, they can be accessed just like any other environment variable.
+
+Microsoft provides a tool to easily work with user secrets called the Secret Manager. This tool is handy when working in a development environment. In order to use this tool, the package `Microsoft.Extensions.SecretManager.Tools` should be listed in the "tools" section in the `project.json` file. This tool should already be listed when using the ASP.NET Core Web Application project template.
+
+#### Configuring the Secret Manager Tool
+
+To make sure that the secret manager tool is working properly, open a command line and navigate to the project root folder (the folder containing the `project.json` file) and execute the following command:
+
+```plaintext
+
+dotnet user-secrets -h
+```
+
+Running that command should show the version that's installed as well as usage, options, and available commands. If the tool is not configured yet, running that command will install and configure the tool for you.
+
+#### Adding a User Secret
+
+To add a user secret, run the following command on the command line, substituting the values for **\[Key\]**, **\[Value\]**, and **\[ProjectDirectory\]** appropriately:
+
+```plaintext
+
+dotnet user-secrets set [Key] [Value] --project [ProjectDirectory]
+```
+
+#### Accessing a User Secret
+
+User secrets can be accessed again through the `GetSection` method.
+
+```csharp
+
+Configuration.GetSection("[Key]").Value
+```
+
+## Conclusion
+
+In this post we saw the new configuration model in ASP.NET Core web applications. Configuration functionality is made possible by a collection of NuGet packages working together. Configuration sources include JSON files, environment variables, and the user secret store.

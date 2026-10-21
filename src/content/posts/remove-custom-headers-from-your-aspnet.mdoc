@@ -1,0 +1,69 @@
+---
+title: Remove Custom Headers From Your ASP.NET MVC Project
+description: >-
+  Whenever we start with a new ASP.NET MVC project, the tendency is to use one of the templates offered by Visual Studio. The template goes a long way in getting us started with our project. However one thing that the…
+publishedAt: 2015-09-19
+draft: false
+tags:
+  - asp-net
+  - mvc
+  - security
+originalUrl: https://ojdevelops.blogspot.com/2015/09/remove-custom-headers-from-your-aspnet.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b31bf0fdeebf-remove-custom-headers-from-your-asp.net-mvc-project.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b31bf0fdeebf-remove-custom-headers-from-your-asp.net-mvc-project.jpg)
+
+Whenever we start with a new ASP.NET MVC project, the tendency is to use one of the templates offered by Visual Studio. The template goes a long way in getting us started with our project. However one thing that the template does not do is remove the HTTP headers that are related to ASP.NET and MVC. Today we are going to look at those and how and why to remove them.
+
+## Custom Headers
+
+We can see the following three headers being included in the response whenever an MVC page is returned from the server:
+
+```plaintext
+
+X-AspNetMvc-Version: 5.2
+X-AspNet-Version: 4.0.30319
+X-Powered-By: ASP.NET
+```
+
+The exact numbers will vary depending on the version of ASP.NET / MVC being used. For this blog post I am using Visual Studio 2013 Update 5.
+
+These headers can be seen by inspecting the web traffic via a tool such as [Fiddler](/blog/using-fiddler-to-examine-web-traffic/).
+
+Exposing these headers can be an issue from a security standpoint. That is because these headers give away what technology stack was used to create the web application. Knowing this info, malicious users or attackers will be able to exploit vulnerabilities that are specific to the technology stack.
+
+## Removing the Custom Headers
+
+Fortunately, these headers can easily be concealed.
+
+To remove the `X-AspNetMvc-Version` header, clear them from within the `Application_Start` method in `Global.asax.cs`:
+
+```csharp
+
+MvcHandler.DisableMvcResponseHeader = true;
+```
+
+To remove the `X-AspNet-Version` header, modify the `httpRuntime` element in `web.config` to include the `enableVersionHeader` attribute:
+
+```xml
+
+<httpRuntime targetFramework="4.5" enableVersionHeader="false" />
+```
+
+Finally, to remove the `X-Powered-By` header, clear them from within `web.config` as well:
+
+```xml
+
+<system.webServer>
+ <httpProtocol>
+ <customHeaders>
+ <clear />
+ </customHeaders>
+ </httpProtocol>
+</system.webServer>
+```
+
+Doing these steps will ensure that these custom headers do not get exposed in the returned HTTP responses.
+
+## Conclusion
+
+Today we looked at some custom headers that are exposed by default in the ASP.NET MVC project template and how to remove them. Removing these headers will hide the fact that ASP.NET / MVC were the technologies used and will make our applications a little more secure.

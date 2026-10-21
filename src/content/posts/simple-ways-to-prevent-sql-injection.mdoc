@@ -1,0 +1,62 @@
+---
+title: Simple Ways to Prevent SQL Injection Attacks
+description: >-
+  Recently I've been working on a library that would allow direct CRUD operations of any object to the database. The library would detect the types and values of the properties of the classes involved then create…
+publishedAt: 2013-05-14
+draft: false
+tags:
+  - net
+  - c-sharp
+  - security
+  - sql-server
+originalUrl: https://ojdevelops.blogspot.com/2013/05/simple-ways-to-prevent-sql-injection.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/77a9055bc25f-simple-ways-to-prevent-sql-injection-attacks.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/77a9055bc25f-simple-ways-to-prevent-sql-injection-attacks.jpg)
+
+Recently I've been working on a library that would allow direct CRUD operations of any object to the database. The library would detect the types and values of the properties of the classes involved then create Insert, Update, GetAll, and GetById procedures depending on what they find.
+
+It was working great and I was happy with the result. However when I showed it to a friend he pointed out that there might be security concern for building such queries. I researched about it a little and I found he was correct: my code was vulnerable to SQL injection attacks.
+
+## SQL Injection Attacks
+
+A [SQL injection attack](http://en.wikipedia.org/wiki/SQL_injection) is an attempt to pass customized queries to the database through exposed fields, such as textboxes. For example, consider the following code that forms part of a query template:
+
+```csharp
+
+string query = "INSERT INTO Employees ( Name ) VALUES ( " + txtName.Text + " )";
+```
+
+It's a simple query that inserts into a single column of a table, with the input coming from a textbox.
+
+Now imagine that the user inputs the following into the textbox:
+
+```plaintext
+
+'' ) DELETE FROM Employees --
+```
+
+The resulting query would now look like this:
+
+```sql
+
+INSERT INTO Employees ( Name ) VALUES ( '' ) DELETE FROM Employees -- )
+```
+
+You can see that instead of inserting into the table, the query now deletes the entire table! This is very, very bad. Aside from this kind of attack (deleting), an attacker can also cause other sorts of trouble such as inserting malicious information or retrieving sensitive data.
+
+## Preventing Injection Attacks
+
+The most common ways to prevent SQL injection attacks are using **stored procedures** and using **parameterized queries**.
+
+Using stored procedures forces you to use parameters. These parameters can be checked for malicious script, either in the procedure itself or by the framework. The principle is the same for using parameterized queries: the value gets wrapped in a SqlParameter object and can be cleansed for malicious scripts.
+
+Here is a parameterized version of the query above:
+
+```sql
+
+string query = "INSERT INTO Employees ( Name ) VALUES ( @Name )"; 
+SqlCommand cmd = new SqlCommand(query, connection); // 'connection' is an open connection
+cmd.Parameters.AddWithValue("@Name", txtName.Text);
+```
+
+Using such parameterized queries or stored procedures will definitely make your application more secure.

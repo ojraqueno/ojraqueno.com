@@ -1,0 +1,228 @@
+---
+title: Loading Related Data in Entity Framework
+description: >-
+  There are three behaviors that entity framework can use when loading related data. These are lazy loading , eager loading , and explicit loading . The main difference between the three are in when the related data…
+publishedAt: 2015-12-26
+draft: false
+tags:
+  - c-sharp
+  - entity-framework
+originalUrl: https://ojdevelops.blogspot.com/2015/12/loading-related-data-in-entity-framework.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/0af2ac253cf5-loading-related-data-in-entity-framework.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/0af2ac253cf5-loading-related-data-in-entity-framework.jpg)
+
+There are three behaviors that entity framework can use when loading related data. These are **lazy loading**, **eager loading**, and **explicit loading**. The main difference between the three are in when the related data gets loaded and whether it is done behind-the-scenes or explicitly. In this post we will learn about these behaviors and evaluate when one should be used over the other.
+
+## Related Data
+
+Entities that have a one-to-many relationship with other entities are common in data models. In this post we will be using a simple `User` to `Photo` relationship, where one `User` can have multiple related `Photo` items:
+
+```csharp
+
+public class User
+{
+ public int Id { get; set; }
+ public string Name { get; set; }
+
+ public virtual ICollection<Photo> Photos { get; set;}
+}
+
+pubic class Photo
+{
+ public int Id { get; set; }
+ public string Url { get; set; }
+
+ public int UserId { get; set; }
+ public virtual User User { get; set; }
+}
+
+public class MyContext : DbContext
+{
+ public DbSet<User> Users { get; set; }
+ public DbSet<Photo> Photos { get; set; }
+}
+```
+
+The resulting database schema is this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/28b288df8bcb-schema.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2f7561ba489d-schema.png)
+
+## Lazy Loading
+
+Let's start with lazy loading. If we have this query:
+
+```csharp
+
+using (var db = new MyContext())
+{
+ // Assume that there is a user which has and id of 1 which has photos.
+ var user = db.Users.Find(1);
+ var photos = user.Photos;
+}
+```
+
+This works just fine - the related photos get loaded into the `photos` variable.
+
+Now we know that users and photos are stored in different tables. And in the code, we only had to query the `db` once (when getting the user), so we would think that only one query is being sent to the database, retrieving the user and photos in one go.
+
+But when we examine the query statements being issued, we find that there are actually two queries being sent!
+
+The first query is to retrieve the user:
+
+```sql
+
+exec sp_executesql N'SELECT TOP (2) 
+ [Extent1].[Id] AS [Id], 
+ [Extent1].[Name] AS [Name]
+ FROM [dbo].[Users] AS [Extent1]
+ WHERE [Extent1].[Id] = @p0',N'@p0 int',@p0=1
+go
+```
+
+And the second query is to retrieve related data, that is to say, the photos:
+
+```sql
+
+exec sp_executesql N'SELECT 
+ [Extent1].[Id] AS [Id], 
+ [Extent1].[Url] AS [Url], 
+ [Extent1].[UserId] AS [UserId]
+ FROM [dbo].[Photos] AS [Extent1]
+ WHERE [Extent1].[UserId] = @EntityKeyValue1',N'@EntityKeyValue1 int',@EntityKeyValue1=1
+go
+```
+
+This is lazy loading in action. In lazy loading, related entities are only loaded when they are needed. In our example, "when they are needed" is when we accessed them by calling `user.Photos`.
+
+#### How Lazy Loading is Implemented in Entity Framework
+
+To implement lazy loading, Entity Framework creates a class at runtime that derives from our entity class. Then, it overrides the `virtual` navigation property and adds database access code in the getter. This child class is called a *dynamic proxy*.
+
+So in the example above, we were actually working with the dynamic proxy class that derives from `User`. The `Photos` property that we used was from the dynamic proxy, and it ran a database query when we tried to access the property's value using `user.Photos`.
+
+#### Downsides of Lazy Loading
+
+We already saw a downside of lazy loading: it will result in multiple queries instead of one. Now sometimes that is a good thing, but for small data sets like in our example above, it would be best to just use one query to retrieve all the data at once.
+
+The multiple-query problem can be compounded when there is a collection of users. If we try to loop through the users and access the photos for each one of them, the database will be queried in each iteration.
+
+Another problem I've encountered is in the context of JSON serialization in an ASP.NET MVC project. If we query for a user and return that as JSON, the MVC framework will try to serialize it. However, the serializer doesn't work well with dynamic proxy classes. So when it tries to serialize the `Photos` property, an exception will occur.
+
+#### How to Turn Lazy Loading Off
+
+Since creation of a derived class and overriding of the collection property is involved in Entity Framework's implementation of lazy loading, we can turn lazy loading off by marking our class as `sealed` and/or removing the `virtual` keyword from our collection property.
+
+We can also configure lazy loading globally through the `DbContext`'s `Configuration` property:
+
+```csharp
+
+public class MyContext : DbContext
+{
+ public MyContext()
+ {
+ Configuration.LazyLoadingEnabled = false;
+ }
+}
+```
+
+## Eager Loading
+
+What if we want to load all related entities in a single query? For that, we need to use the `Include` method for each related entity that we want to retrieve. The `Include` method we will be using is the one that takes a lambda expression as a parameter, and for that we need to import the `System.Data.Entity` namespace. We also need to use `Single` or `SingleOrDefault` instead of `Find`.
+
+```csharp
+
+using System.Data.Entity;
+
+using (var db = new MyContext())
+{
+ // Assume that there is a user which has and id of 1 which has photos.
+ var user = db.Users.Include(u => u.Photos).Single(1);
+ var photos = user.Photos;
+}
+```
+
+That would produce a single, slightly more involved query that looks like this:
+
+```csharp
+
+SELECT 
+ [Project1].[Id] AS [Id], 
+ [Project1].[Name] AS [Name], 
+ [Project1].[C1] AS [C1], 
+ [Project1].[Id1] AS [Id1], 
+ [Project1].[Url] AS [Url], 
+ [Project1].[UserId] AS [UserId]
+ FROM ( SELECT 
+ [Limit1].[Id] AS [Id], 
+ [Limit1].[Name] AS [Name], 
+ [Extent2].[Id] AS [Id1], 
+ [Extent2].[Url] AS [Url], 
+ [Extent2].[UserId] AS [UserId], 
+ CASE WHEN ([Extent2].[Id] IS NULL) THEN CAST(NULL AS int) ELSE 1 END AS [C1]
+ FROM (SELECT TOP (2) [Extent1].[Id] AS [Id], [Extent1].[Name] AS [Name]
+ FROM [dbo].[Users] AS [Extent1]
+ WHERE 1 = [Extent1].[Id] ) AS [Limit1]
+ LEFT OUTER JOIN [dbo].[Photos] AS [Extent2] ON [Limit1].[Id] = [Extent2].[UserId]
+ ) AS [Project1]
+ ORDER BY [Project1].[Id] ASC, [Project1].[C1] ASC
+go
+```
+
+If we look closely, toward the bottom of the query we would see the `OUTER JOIN` being used. Using eager loading, all the specified related data will be loaded in the first query. When the `user.Photos` is accessed, the database will not be queried anymore.
+
+#### Downsides of Eager Loading
+
+Earlier in the lazy loading section, we saw that lazy loading results in multiple database queries, and this can be more inefficient than one big query. In eager loading, the result is one big query. But this can also be a downside, because in some cases, multiple queries can be more efficient than a single big query. This is especially true when dealing with entities that have a lot of related data.
+
+## Explicit Loading
+
+Explicit loading is like lazy loading in that the related entities are loaded only later. The difference is that in explicit loading, the related entities are loaded when the `Load` method is called, rather than when the property is accessed.
+
+We can get to the `Load` through the `Entry` and then the `Collection` methods of `DbContext`. Here's what that might look like in code:
+
+```csharp
+
+using (var db = new MyContext())
+{
+ // Assume that there is a user which has and id of 1 which has photos.
+ var user = db.Users.Find(1);
+ db.Entry(user).Collection(u => u.Photos).Load();
+}
+```
+
+The database queries that get executed are similar to the queries generated in lazy loading.
+
+Another difference between explicit loading and lazy loading is that navigation properties don't have to be marked as `virtual` when using explicit loading. This can come in handy when trying to simplify entity classes.
+
+We can check if a collection is already loaded by using the `IsLoaded` property:
+
+```csharp
+
+using (var db = new MyContext())
+{
+ // Assume that there is a user which has and id of 1 which has photos.
+ var user = db.Users.Find(1);
+ db.Entry(user).Collection(u => u.Photos).Load();
+ var isLoaded = db.Entry(user).Collection(u => u.Photos).IsLoaded;
+}
+```
+
+To load the `User` of a `Photo`, we use the `Reference` method instead of `Collection`:
+
+```csharp
+
+using (var db = new MyContext())
+{
+ // Assume that there is a photo which has and id of 1
+ var photo = db.Photos.Single(p => p.Id == 1);
+ db.Entry(photo).Reference(p => p.User).Load();
+}
+```
+
+#### Downsides of Explicit Loading
+
+Like lazy loading, explicit loading can cause multiple queries to be sent to the database. Explicit loading also requires more code to be written compared to lazy loading.
+
+## Conclusion
+
+In this post we talked about **lazy loading**, **eager loading**, and **explicit loading** in Entity Framework. We also talked about some downsides of each approach. Hopefully this knowledge will help you better understand how Entity Framework loads related data and evaluate when to use one behavior over another.

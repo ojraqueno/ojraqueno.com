@@ -1,0 +1,102 @@
+---
+title: Using XML with SQL Server
+description: >-
+  Sometimes there is a requirement to insert multiple values in the database. This can be done using bulk insert, table-valued functions, through XML, or simply by calling an insert procedure that inserts a single item…
+publishedAt: 2013-06-10
+draft: false
+tags:
+  - sql-server
+  - xml
+originalUrl: https://ojdevelops.blogspot.com/2013/06/using-xml-with-sql-server.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/cea3cd0c9437-using-xml-with-sql-server.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/cea3cd0c9437-using-xml-with-sql-server.jpg)
+
+Sometimes there is a requirement to insert multiple values in the database. This can be done using bulk insert, table-valued functions, through XML, or simply by calling an insert procedure that inserts a single item multiple times. In this post we will be taking a look at how to do multiple inserts using a single query through XML using SQL Server 2008.
+
+## Selecting from XML
+
+Let's say you have an XML chunk that looks like this:
+
+```xml
+
+<AppUsers>
+ <AppUser>
+ <Username>awesome username</Username>
+ <Email>awesome email</Email>
+ <FirstName>awesome firstname</FirstName>
+ <LastName>awesome lastname</LastName>
+ </AppUser>
+ <AppUser>
+ <Username>amazing username</Username>
+ <Email>amazing email</Email>
+ <FirstName>amazing firstname</FirstName>
+ <LastName>amazing lastname</LastName>
+ </AppUser>
+</AppUsers>
+```
+
+This is a collection of 'appuser' nodes, with the root node 'appusers'. Each appuser has a username, email, firstname, and lastname.
+
+Let's select this XML in SQL Server. First, we turn it into the SQL XML type:
+
+```sql
+
+DECLARE @MyXML XML
+SET @MyXML = '<AppUsers>
+ <AppUser>
+ <Username>awesome username</Username>
+ <Email>awesome email</Email>
+ <FirstName>awesome firstname</FirstName>
+ <LastName>awesome lastname</LastName>
+ </AppUser>
+ <AppUser>
+ <Username>amazing username</Username>
+ <Email>amazing email</Email>
+ <FirstName>amazing firstname</FirstName>
+ <LastName>amazing lastname</LastName>
+ </AppUser>
+</AppUsers>'
+```
+
+Then we can use the following markup to select it:
+
+```sql
+
+SELECT 
+ AppUser.value('(Username)[1]', 'Varchar(50)') AS Username,
+ AppUser.value('(Email)[1]', 'Varchar(50)') AS Email,
+ AppUser.value('(FirstName)[1]', 'Varchar(50)') AS FirstName,
+ AppUser.value('(LastName)[1]', 'Varchar(50)') AS LastName
+FROM 
+ @MyXML.nodes('/AppUsers/AppUser') AS X(AppUser)
+```
+
+Which gives us the very nice result of:
+
+```plaintext
+
+Username Email FirstName LastName
+---------------------------------- ---------------------------------- ---------------------------------- ----------------------------------
+awesome username awesome email awesome firstname awesome lastname
+amazing username amazing email amazing firstname amazing lastname
+```
+
+## A Closer Look at the Syntax
+
+Let's take a look at the syntax used to select the XML. Let's begin with the FROM statement.
+
+For the FROM statement:
+
+-   **@MyXML** - The variable of type XML whose value is the XML input.
+-   **.nodes()** - Gets the nodes specified in the path. In our example, we are getting the collection of AppUser nodes whose root is the AppUsers node, hence we type .nodes('/AppUsers/AppUser')
+-   **AS X(AppUser)** - This will allow us to reference the node inside the SELECT statement. In particular, the 'AppUser' will be used as the reference. The 'X' is arbitrary and can be replaced with something else.
+
+For the SELECT statement:
+
+-   **AppUser** - The reference to the node. This reference must have the same name as the reference in the FROM statement.
+-   **.value()** - Gets the value of the node. We are using two parameters: the first one is the name of the XML element, while the second one is the SQL type of that parameter.
+-   **AS \[columnname\]** - The column name once selected. Same as for ordinary select statements.
+
+As you can see it is pretty straightforward to select from a simple XML document. There is no need for looping or cursors.
+
+Just like any other SELECT statement, you can combine this with an INSERT INTO statement in order to insert the values into a table. And of course, you can use this to create a stored procedure whose input will be XML. Just remember to declare the parameter type as XML.

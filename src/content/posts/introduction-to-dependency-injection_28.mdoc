@@ -1,0 +1,178 @@
+---
+title: Introduction to Dependency Injection - Part 2
+description: >-
+  In the last post I gave an introduction to dependency injection , where I described what it is, how it can be achieved, and the motivation behind it. We left off by providing an example in an ASP.NET MVC controller,…
+publishedAt: 2016-04-28
+draft: false
+tags:
+  - asp-net
+  - c-sharp
+  - design
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2016/04/introduction-to-dependency-injection_28.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/549d3c59143e-introduction-to-dependency-injection-part-2.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/549d3c59143e-introduction-to-dependency-injection-part-2.jpg)
+
+In the last post I gave an [introduction to dependency injection](/blog/introduction-to-dependency-injection/), where I described what it is, how it can be achieved, and the motivation behind it. We left off by providing an example in an ASP.NET MVC controller, where we manually "newed up" dependencies inside the constructor of a controller. In this post we will take a look at dependency injection frameworks and see how they can help us manage dependencies.
+
+## What Does a Dependency Injection Framework Do?
+
+Whenever we instantiate a concrete implementation of an interface (something that is done in one line of code), we are actually doing two things: 1) choosing which implementation to use and 2) creating the instance of that implementation:
+
+```csharp
+
+// We are doing two things!
+IMyInterface myService = new MyService();
+```
+
+At the simplest level, what a dependency injection framework (DI framework for short) does is assume the responsibility of creating objects that implement our interfaces.
+
+When using a DI framework, we won't need to "new" objects up manually anymore. We just have to tell the framework which implementation to use for which interface. For ASP.NET MVC applications, this is typically done somewhere within the `Application_Start` method of `Global.asax.cs`.
+
+Most DI frameworks also provide the capability to hook into the MVC infrastructure. This will allow dependencies to be injected into a controller's constructor.
+
+## Setting Up Dependency Injection Using SimpleInjector
+
+To demonstrate how a dependency injection framework can be used, I will use the SimpleInjector framework.
+
+SimpleInjector can be installed via NuGet. We will actually be using a few packages here. Go ahead and install the following package from NuGet first:
+
+```plaintext
+
+SimpleInjector.Integration.Web.Mvc
+```
+
+Now let's create a simple interface and a sample implementation:
+
+```csharp
+
+public interface ITestService
+{
+ void MyMethod();
+}
+
+public class TestService : ITestService
+{
+ public void MyMethod()
+ {
+ System.Diagnostics.Debug.WriteLine("Hello World!");
+ }
+}
+```
+
+Next, we need to tell the DI framework which implementations to use for which interfaces. In our sample we only have one interface that has a single implementation, so the code will be short. But even if there are many interfaces and implementations, the pattern will be the same.
+
+We can put the dependency registration code in the `Application_Start` method of `Global.asax.cs`:
+
+```csharp
+
+using SimpleInjector;
+using SimpleInjector.Integration.Web.Mvc;
+
+// ... 
+
+protected void Application_Start()
+{
+ // .. default implementation ..
+
+ // "Container" is a class specific to the SimpleInjector framework
+ // Other DI frameworks use similarly named classes.
+ var container = new Container();
+
+ // Set the DependencyResolver used by MVC.
+ // This will allow constructor injection in controllers.
+ DependencyResolver.SetResolver(new SimpleInjectorDependencyResolver(container));
+
+ // We tell the SimpleInjector framework which implementations
+ // for which interfaces to use by using the "Register" method.
+ // Other DI frameworks have similarly named methods.
+ container.Register<ITestService, TestService>();
+
+ // If there are multiple interfaces and implementations,
+ // just call the Register method for each.
+}
+```
+
+And the setup is complete! Now it's time to try it out.
+
+## Trying It Out
+
+First, let's modify `HomeController`. Let's add a constructor that takes an instance of `ITestService` and save that off to a private field.
+
+```csharp
+
+public class HomeController : Controller
+{
+ private readonly ITestService _testService;
+
+ public HomeController(ITestService testService)
+ {
+ _testService = testService;
+ }
+}
+```
+
+Next, we try `_testService` out by using it inside the `Index` method:
+
+```csharp
+
+public ActionResult Index()
+{
+ _testService.MyMethod();
+
+ return View();
+}
+```
+
+Now, put a breakpoint at the beginning of the `Index` method and debug the application. Step through and observe the Output window - you should be able to see the "Hello World!" text. Hooray!
+
+## Lifetime Management
+
+Earlier, we said that a DI framework assumes the responsibility of creating implementations so that we don't have to do it ourselves. That is already a huge benefit, especially if there are many interfaces implementations and / or there are long dependency chains.
+
+But there is another advantage to this: the DI framework can decide *how and when* to create the implementation. It can "new" one up every time, use a single instance always, or "new" one up for each HTTP request and reuse that same one throughout the entire request.
+
+To see this in action for the SimpleInjector framework, install the following NuGet package:
+
+```csharp
+
+SimpleInjector.Extensions.ExecutionContextScoping
+```
+
+Next, come back to the `Register` call in `Global.asax.cs`. Now we can use the overload that takes a `Lifestyle` parameter. SimpleInjector has three kinds of lifestyles:
+
+1.  **Transient** - a new instance will be created every time.
+2.  **Scoped** - a new instance will be used within and throughout a specified scope. An example of a scope is "Per Web Request", where only a single instance is used throughout an entire HTTP request.
+3.  **Singleton** - only one instance will be used everywhere.
+
+The lifestyle I find myself using the most is the Scoped lifestyle with a scope of Per Web Request. Here is how that can be set up:
+
+```csharp
+
+using SimpleInjector;
+using SimpleInjector.Integration.Web;
+using SimpleInjector.Integration.Web.Mvc;
+
+// ...
+
+protected void Application_Start()
+{
+ // .. default implementation ..
+
+ var container = new Container();
+ 
+ // Set the scope to "Per Web Request"
+ container.Options.DefaultScopedLifestyle = new WebRequestLifestyle();
+
+ DependencyResolver.SetResolver(new SimpleInjectorDependencyResolver(container));
+
+ // Use the Scoped lifestyle when calling the Register method
+ container.Register<ITestService, TestService>(Lifestyle.Scoped);
+}
+```
+
+With this setup, the `TestService` implementation will be created for each HTTP request and used throughout the entire request, no matter how many classes have a dependency on it. The Per Web Request Scoped lifestyle is particularly useful when registering custom `DbContext` implementations. Each HTTP request typically corresponds to a single user action, and we normally would like to share the same `DbContext` instance in a single request..
+
+## Conclusion
+
+This concludes our two-part series on Introduction to Dependency Injection. I hope you have gained a better understanding of what dependency injection is and its practical use in web application projects.

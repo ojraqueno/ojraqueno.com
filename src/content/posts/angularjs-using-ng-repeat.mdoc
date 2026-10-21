@@ -1,0 +1,114 @@
+---
+title: "AngularJS: Using ng-repeat"
+description: >-
+  AngularJS is the Javascript MVC framework developed by Google. In this post we will build a simple application using AngularJS. If you aren't familiar with it, you might want to read my introduction to AngularJS…
+publishedAt: 2013-05-22
+draft: false
+tags:
+  - angularjs
+  - javascript
+originalUrl: https://ojdevelops.blogspot.com/2013/05/angularjs-using-ng-repeat.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3ec9435f3e55-angularjs-using-ng-repeat.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3ec9435f3e55-angularjs-using-ng-repeat.jpg)
+
+AngularJS is the Javascript MVC framework developed by Google. In this post we will build a simple application using AngularJS. If you aren't familiar with it, you might want to read my [introduction to AngularJS](/blog/introduction-to-angularjs/) first. This post will introduce the concept of controllers and the app will display a simple list of items (persons) to the view.
+
+In this application I will be using AngularJS 1.0.6 which is the latest stable version as of this writing. For the CSS, I am using Twitter bootstrap.
+
+## Setting up the Files
+
+First off, here's the barebones html file as well as what it looks like when run:
+
+```xml
+
+<html>
+<head>
+ <title>Simple Angular App</title>
+ <link href="bootstrap.css" rel="stylesheet" />
+ <script type="text/javascript" src="angular.js"></script>
+</head>
+<body>
+ <h1>Hello, World!</h1>
+</body>
+</html>
+```
+
+[![angularjs hello world](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/5cf266bee8d7-helloworld.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/47189539da2b-helloworld.png)
+
+The "Hello, World!" is just a sanity check.
+
+## Adding Angular Magic
+
+Let's add a new javascript file with the following contents:
+
+```javascript
+
+function MyCtrl($scope) {
+ $scope.persons = [
+ { Name: "John", Age: 35 },
+ { Name: "Jane", Age: 32 },
+ { Name: "Bob", Age: 33 }
+ ];
+}
+```
+
+And modify the html file like so:
+
+```xml
+
+<html ng-app>
+<head>
+ <title>Simple Angular App</title>
+ <link href="bootstrap.css" rel="stylesheet" />
+ <script type="text/javascript" src="angular.js"></script> 
+ <script type="text/javascript" src="app.js"></script>
+</head>
+<body>
+ <h1>Hello, World!</h1>
+ <div ng-controller="MyCtrl">
+ <ul>
+ <li ng-repeat="person in persons">
+ {{person.Name}} is {{person.Age}} years old.
+ </li>
+ </ul>
+ </div>
+</body>
+</html>
+```
+
+And the result is:
+
+[![ng-repeat](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2c6070f06740-ng-repeat.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/df996e9f57ea-ng-repeat.png)
+
+You can see that each person in he list has appeared on the page.
+
+## How it Works
+
+There are a few new attributes in this page; let's go through them one by one. These attributes are examples of **directives**, or custom html markup that may display some behavior such as DOM manipulation. I will not go deeply into directives now, but I will explain the directives used in this page.
+
+The first new directive you see is **ng-controller**. This attribute tells AngularJS which portion of the page a specific controller should manage. In our example, it says "everything inside this div is managed by the controller named 'MyCtrl'". We'll get to 'MyCtrl' later, but for now know that in the MVC pattern, the controller is the glue that ties the view and the model together. It contains the data that will be displayed to the view, and it handles the logic when the model is updated.
+
+In large applications it is recommended not to include all of the business logic in controllers as it may result in unmanageable and duplicate code. Rather, most logic functions can be handled by **services**, which can then be used by multiple controllers through the **dependency injection** mechanism. In this post we will not discuss services and dependency injection.
+
+Another new directive is **ng-repeat**. As the name suggests, it handles repeating of html elements. We have used the directive as <li ng-repeat="person in persons">. This means: "for each item in the persons array, repeat the <li> element and its contents". The "person" variable gives us a handle on the current item in the loop's iteration. As you can see, we used it to access the current person's Name and Age properties and display them using the already familiar double curly braces. By the way, the double curly braces is another directive that comes with AngularJS out of the box.
+
+Now let's take a look at the the controller definition. Here it is once again:
+
+```javascript
+
+function MyCtrl($scope) {
+ $scope.persons = [
+ { Name: "John", Age: 35 },
+ { Name: "Jane", Age: 32 },
+ { Name: "Bob", Age: 33 }
+ ];
+}
+```
+
+The first thing to notice is the name of the function, 'MyCtrl'. That name is what the ng-controller directive will look for during the phase where AngularJS looks for controllers and data bindings and other directives on the page.
+
+The next thing is the '$scope' object. The '$scope' object takes care of the data binding to the view. This is an example of dependency injection in AngularJS, where the needed object is just passed into the controller function. This decouples the controller (whose function is to handle logic) from the '$scope' (which handles data binding). Other objects such as services are passed into the controller in a similar fashion.
+
+Inside the controller function, we can see the declaration and definition of a variable called '$scope.persons'. As you can see it is a simple JavaScript array whose elements contain two properties each, Name and Age. Because we declared it on the scope, the 'persons' array will become accessible to the view. In our example, it was used by the ng-repeat directive.
+
+That's it for today and I hope to see you again as we explore more of AngularJS.

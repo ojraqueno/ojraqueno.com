@@ -1,0 +1,71 @@
+---
+title: "Don't Make Me Think... About Your Code"
+description: >-
+  "Don't Make Me Think" is the title of the famous UX book by Steve Krug. One of the main ideas in the book is that a user interface should be designed in such a way that users' thinking is kept to a minimum. As much…
+publishedAt: 2014-11-29
+draft: false
+tags:
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2014/11/dont-make-me-think-about-your-code.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2315f071a732-don-27t-make-me-think--about-your-code.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2315f071a732-don-27t-make-me-think--about-your-code.jpg)
+
+"Don't Make Me Think" is the title of the famous UX book by Steve Krug. One of the main ideas in the book is that a user interface should be designed in such a way that users' thinking is kept to a minimum. As much as possible, it should be obvious what actions the user must do to achieve a goal. Answers to questions like "where do I go to checkout?" or "what will happen when I click this button?" should be obvious just from looking at the page.
+
+Though the book is about UX principles, developers who deal primarily with code can also benefit from its lessons. The idea of "Don't Make Me Think" applies not only to the user interface but also, perhaps surprisingly, to code. That is, code should be written in such a way that reading it consumes as little brain power as possible.
+
+## A Code-Reading Exercise
+
+Consider this small code snippet:
+
+```csharp
+
+if (employee.WorkHours > 160 && employee.Status == Status.Regular && !employee.ResignationDate.HasValue) {
+ CalculatePay(employee);
+}
+```
+
+If I asked you to tell me what the snippet does, you would probably say something like "if the employee work hours, status, and resignation date all meet the desired criteria, the pay of an employee will be calculated."
+
+If I then asked you, "what do the three conditions, taken together, signify?" It would probably take a few milliseconds for you to think and deduce that "the three conditions, taken together, is the criteria of pay eligibility".
+
+But what if I showed you this instead?
+
+```csharp
+
+bool employeeIsEligibleForPay = employee.WorkHours > 160 && employee.Status == Status.Regular && !employee.ResignationDate.HasValue;
+if (employeeIsEligibleForPay) {
+ CalculatePay(employee);
+}
+```
+
+In terms of functionality, nothing has changed - all the checks are still there. If I asked you now what the snippet does, you would say probably say the same thing as before - that if the employee work hours, status, and resignation date all meet the desired criteria, the pay of an employee will be calculated.
+
+But the answer to the second question, or rather the process of arriving at the answer to the second question, will be different. Instead of deducing that the three conditions are the criteria for eligibility, you would just read the variable name for you to realize that the three conditions, taken together, is the criteria of pay eligibility. There is no need for deduction anymore.
+
+In other words, the amount of thinking required to understand the second snippet is less than the amount of thinking required to understand the first snippet.
+
+## Space and Time
+
+In addition to saving thought time, writing code that way also leads to savings in thought space. The need to put information into your short term memory is eliminated. Instead of saving it in memory, it is saved on the code base itself.
+
+Why is saving on thought space important? The reason is that the brain can only store a finite information (about 7) in short-term memory. In the first code snippet above, one piece of information needed to be stored. If that was part of a larger code base, then that one piece of information needed to be remembered as the entire code base was read. If you have been reading code for even a few months you know that the pieces of information that need to be remembered go up very, very quickly.
+
+Once you reach the limit, many undesirable things can happen. First of all, you might forget the business rules relevant to that specific portion of code. You lose sight of the big picture. Second, you might forget the actual implementation. If the fulfillment of a business rule involved a complicated process and you are in the middle of it, you might forget the steps that led you there. If you have ever read code and then suddenly said "wait, how did I get here again?" then you know what this means.
+
+As a consequence of forgetting or getting lost, you read the code again. Often times, since you cannot pinpoint at what point you got "lost", you start from the beginning. I'm sure you know how this feels as well. :)
+
+## Encapsulation in Disguise
+
+Did you see it? From an object-oriented point of view, what the second snippet did was to create (or should I say expose) a layer of abstraction. Here are some similar implementations, with the one used in the snippet above included:
+
+```csharp
+
+bool employeeIsEligibleForPay = employee.WorkHours > 160 && employee.Status == Status.Regular && !employee.ResignationDate.HasValue;
+bool employeeIsEligibleForPay = GetIfEmployeeIsEligibleForPay(employee);
+bool employeeIsEligibleForPay = PayCalculator.IsEligible(employee);
+```
+
+I'm not here to talk about what's the best place for the implementation to reside - whether it's inline, in another method in the same class, in a method in another class, or in some other place. The point is that if you were interested in the overall process, you would not need to know how the eligibility of an employee was determined. You would not need to look at the right hand side of the equation. You would not need to know the implementation details. And that is classic encapsulation.
+
+Though poorly written code is not the exclusive cause of complex and unreadable code, it is, no doubt, one cause. Unlike business rules where developers have no control and therefore whose complexity is unchangeable, we have control over how we write code and we should strive to write code that doesn't "make us think".

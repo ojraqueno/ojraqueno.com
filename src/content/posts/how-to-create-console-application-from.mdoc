@@ -1,0 +1,50 @@
+---
+title: How to Create a Console Application from Visual Studio Express for Web
+description: >-
+  Web application solutions may not always be composed of only web site projects, web services, and class libraries. There are cases when console applications are needed as well. However, the default templates in the…
+publishedAt: 2014-04-01
+draft: false
+tags:
+  - visual-studio
+originalUrl: https://ojdevelops.blogspot.com/2014/03/how-to-create-console-application-from.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/997f9c73ed47-how-to-create-a-console-application-from-visual-studio-express-for-web.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/997f9c73ed47-how-to-create-a-console-application-from-visual-studio-express-for-web.jpg)
+
+Web application solutions may not always be composed of only web site projects, web services, and class libraries. There are cases when console applications are needed as well. However, the default templates in the web express editions of Visual Studio do not include a console application template. In this post I will provide a workaround for that issue.
+
+Here are the steps:
+
+1\. Create a new class library project.
+
+2\. Rename `Class1.cs` to `Program.cs`. Also rename the actual class.
+
+3\. Open `Program.cs` and replace everything with the following:
+
+```csharp
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ConsoleSample
+{
+ public class Program
+ {
+ static void Main(params string[] args)
+ {
+ }
+ }
+}
+```
+
+Don't forget to change the namespace!
+
+4\. Right click on the project then choose Properties.
+
+5\. In the Application section, look for the 'Output type' dropdown, then change it to 'Console Application'.
+
+And that's it! The project is now a console application.
+
+In this post I showed you how to create a console application from a web express edition of Visual Studio. Even though the steps were not that hard, hopefully future web express edition of Visual Studio will include the console application template.

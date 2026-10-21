@@ -1,0 +1,80 @@
+---
+title: "Vertical Slices Application Design with MediatR: Part 1"
+description: >-
+  This is the first of my two-part series about designing applications using vertical slices and how the open-source library MediatR can facilitate this design. In this post we will talk about the concept of vertical…
+publishedAt: 2017-08-27
+draft: false
+tags:
+  - design
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2017/08/vertical-slices-with-mediatr.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9e19bf3838c1-vertical-slices-application-design-with-mediatr.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9e19bf3838c1-vertical-slices-application-design-with-mediatr.jpg)
+
+This is the first of my two-part series about designing applications using vertical slices and how the open-source library [MediatR](https://github.com/jbogard/MediatR) can facilitate this design. In this post we will talk about the concept of vertical slices and in the next post we will look at some sample code that implements this design.
+
+The second part of this series is now out: [Vertical Slices Application Design with MediatR: Part 2](/blog/vertical-slices-with-mediatr-part2/)
+
+## Traditional Layers
+
+It is common practice to separate a solution into different conceptual layers, with each layer encapsulating a specific technical role within the overall application architecture. For instance, in a traditional 3-tiered application, the layers would be the UI layer, Business Logic layer, and the Data layer:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/d7cdb6c7747f-3-layers.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/d7cdb6c7747f-3-layers.png)
+
+This is a good design in that it enforces a separation of concerns between three distinct areas of the application: the user interface, the business logic, and data access. Separating the layers this way paves the way for organized code characterized by loose coupling, smaller code file sizes, adherence to the Single Responsibility Principle, adherence to Don't Repeat Yourself, and more.
+
+## Some Downsides to Traditional Layers
+
+While the benefits are undeniable, there are some downsides to this design approach.
+
+#### Cross-Entity Concerns
+
+When starting a solution with this design in mind, what usually happens is that there is one DTO class, one Data Layer class, and one Business Logic class that corresponds to one database table. However, the way that things are stored may not necessarily reflect the way things are modeled or displayed. When such a scenario is encountered, there might not be an obvious way on how to make the model fit within the layers.
+
+A common example of this is when there is a requirement to process or display data that comes from two or more different tables. Let's say that for Table A there are corresponding EntityA (DTO), RepositoryA (data access), and BusinessLogicA (business logic) classes. Likewise, for TableB, there will be EntityB, RepositoryB, and BusinessLogicB classes. So, for the requirement that uses data from both Table A and Table B, where do you put the business logic code and data access code?
+
+One solution is to attach the code to the entity that a feature is "more about". You can say "well, the major part of this requirement concerns Table A, so I'll use the business logic and data layer code that corresponds to that." The problem with this approach is that it's difficult to define on which entity a feature is "more about". There will be obvious cases, but there will also be non-obvious ones, too. Also, what if the requirement changes in such a way that this feature becomes more about another entity? It's possible that you may not realize that immediately or that you may not realize that at all. And even if you do, it might be difficult to transfer the affected code to the "right spot".
+
+Another solution is to just define a new business logic and data layer class that corresponds to this feature. This is somewhat of a step in the direction of a vertical slices design, but wielding it within a context of traditional layers yields bad results. In this particular instance, an explosion of numerous classes might be the result. Again, that in and of itself is not harmful and can actually be a good thing, but if you end up with classes named TableATableBBusinessLogic and TableATableBRepository, then it will do more harm than good.
+
+Even if we can live with the consequences, in my opinion the biggest problem is this: because of the choice of architecture, we were forced into a situation where this problem was possible. Because we had chosen a design of one dto / repository class / business logic class per database table, we trip up when we encounter requirements that required data from different tables. Had we chosen a different design, we simply would not run into this problem in the first place.
+
+#### Reuse or Tight Coupling?
+
+One of the most powerful characteristics of having separate technical layers is the possibility of reuse. And reuse is a good thing! But there are downsides to this as well, in the context of a database table-centric design.
+
+Suppose there is a repository method which reads from the database somehow. This repository method is used in one of the business layer classes to fulfill some requirement. Now suppose that a new requirement surfaced that required using a similar method. Maybe there was an extra column, and extra search filter, or an extra join table. Or maybe the opposite - one less column, one less filter, or one less join table. What should you do?
+
+What usually happens is that we go with the repository method superset. That is, we go with the method that can accommodate both requirements. Even if that solves the problem technically, it's not a very good decision from a design perspective.
+
+The first reason is that there are extra method parameters, extra columns, extra join tables - extra stuff that are called for by one requirement but not others. And there's no easy way to tell which are the extra stuff from, say, the method parameters alone. This makes the methods hard to reason about.
+
+The second and more sinister reason is that it introduces tight coupling between two (or more) different requirements. If one method is changed, the other is affected. This will produce bugs when you make a change that makes sense for one requirement but doesn't for another one sharing the same method.
+
+Lastly, there are some repository / business logic methods that are never reused at all. This decreases the incentive to have a design that's conducive for reuse from the get-go.
+
+As in the previous point, the design strategy of one dto / repository class / business logic class per database table forces us into thinking about reuse from the get-go because it's the one that fits most.
+
+## Vertical Slices
+
+An alternative and, in my opinion, a better design strategy than database table-centric design is feature-centric design. One feature or action is a vertical slice across all layers:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b3b6c1af6fd5-with-vertical-slices.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b3b6c1af6fd5-with-vertical-slices.png)
+
+In this design, there would still be separate classes for handling UI, business logic, and database access concerns. That is in the interest of loose coupling, single responsibility, and so forth. However, the classes here would be different: each class would be centered around a particular feature or action rather than a database table.
+
+This kind of design addresses the drawbacks listed above. First, it solves the problem of having to deal with cross-entity concerns by preventing that scenario from happening in the first place. Since our classes would not be centered around entities, that kind of problem would simply not apply.
+
+It also addresses the problem of tight coupling through reuse by not designing for re-use from the get-go. For those cases where a truly reusable method is warranted, a refactoring can be done. This refactoring can be easily undone later on if needed.
+
+What if there is a change that affects multiple slices but there's no reusable method available yet? Does that change have to be done everywhere? The answer is yes - and this is one downside of the vertical slices design. However, in my opinion, this is a better downside than the ones mentioned above. I would favor clarity and relative independence over tight coupling in the name of reuse.
+
+In the context of an ASP.NET MVC or WebAPI application, each slice may correspond to one controller action. That makes one controller action (one path essentially) more independent from other actions in the same controller, other actions from other controllers, and from the entire application in general.
+
+This vertical slices design also makes the transition to a microservices architecture smoother, since microservice components are not categorized by UI / business logic / data access but by feature or feature group.
+
+## Conclusion
+
+In this post we talked about some of the downsides of a traditional database table-centric architecture and showed how they are addressed by a vertical slices design. In part 2 of this series (coming out next week) we will take a look at how we can easily apply this to an ASP.NET MVC application using the [MediatR](https://github.com/jbogard/MediatR) library.
+
+See you then!

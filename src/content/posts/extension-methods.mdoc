@@ -1,0 +1,125 @@
+---
+title: Extension Methods
+description: >-
+  Extension methods are a way to add functionality (methods) to types that you do not own or that you have no access to. This handy feature was introduced in .NET 3.5.
+publishedAt: 2013-06-12
+draft: false
+tags:
+  - net
+  - c-sharp
+originalUrl: https://ojdevelops.blogspot.com/2013/06/extension-methods.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/de560a6f83b6-extension-methods.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/de560a6f83b6-extension-methods.jpg)
+
+Extension methods are a way to add functionality (methods) to types that you do not own or that you have no access to. This handy feature was introduced in .NET 3.5.
+
+As an example, consider the following question: in C#, how can you know that an integer is positive? Usually you would do something like this:
+
+```csharp
+
+int x = 6;
+if (x > 0)
+{
+ // do something useful
+}
+```
+
+With extension methods, you can do something like this:
+
+```csharp
+
+int x = 6;
+if (x.IsPositive())
+{
+ // do something useful
+}
+```
+
+This may seem like a trivial example; later I will show some useful cases. For now, let me explain how to create an extension method.
+
+## Creating an Extension Method
+
+Extension methods should:
+
+-   Reside in a public static class
+-   Should be a static method
+-   Should have an instance of the type they are extending as the first parameter in the method signagure
+-   The instance should be preceded by the **this** keyword
+
+For example, to create the IsPositive() method I showed earlier, we can declare a class that looks like this:
+
+```csharp
+
+public static class MyExtensions
+{
+ public static bool IsPositive(this int i)
+ {
+ return i > 0;
+ }
+}
+```
+
+Once we have declared it like this, we can use it on any int variable or any int value.
+
+## Some Examples
+
+Like I mentioned earlier, extension methods provide additional functionality. But there are other benefits as well, which include consistency and readability / abstraction. Here are a few examples:
+
+**IsNull (object)** - here the focus is on consistency rather than adding functionality.
+
+```csharp
+
+public static bool IsNull(this object o)
+{
+ return o == null;
+}
+
+// Sample usage
+object myObject = ... // get object from somewhere
+if (myObject.IsNull())
+{
+ // handle null object
+}
+```
+
+**IsNullOrEmpty (IEnumerable)** - here the focus is on readability. Similar to the string method, this will check if a collection is null or empty, so there's no need to check those two separate things every time.
+
+```csharp
+
+public static bool IsNullOrEmpty<T>(this IEnumerable<T> i)
+{
+ return i == null || !i.Any();
+}
+
+// Sample usage
+IEnumerable<string> myEnumerable = ... // get enumerable strings from somewhere
+if (myEnumerable.IsNullOrEmpty())
+{
+ // handle empty collection without fear of null reference errors.
+}
+```
+
+**IsWeekend (DateTime)** - again, this focuses on readability and abstraction. It's easier to understand what the developer is trying to check with this method.
+
+```csharp
+
+public static bool IsWeekend(this DateTime d)
+{
+ return d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday;
+}
+
+// Sample usage
+DateTime myDateTime = ... // get datetime from somewhere
+if (myDateTime.IsWeekend())
+{
+ // you know exactly what the developer is checking in an instant
+}
+```
+
+Using extension methods also brings with it all the familiar benefits of putting duplicate code in one location. When a change is needed (like in the case of a requirements change) there is only a need to change the code in one location.
+
+Also, testing can also be focused on that method. Once extensive tests have been written for that method, developers will be confident in using it. When a problem occurs, they know that that part of the code works fine, so that can be removed from the list of possible error sources.
+
+## When Not to Use Extension Methods
+
+As much as possible, use extension methods only for types you do not have access to, such as the .NET or 3rd party types. For types that you own, it is better to declare the functionality as an instance method. Also, like anything in programming, make sure that there is a good reason for having an extension method before you create one.

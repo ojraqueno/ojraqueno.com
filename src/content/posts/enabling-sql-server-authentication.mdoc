@@ -1,0 +1,40 @@
+---
+title: Enabling SQL Server Authentication after Installation
+description: >-
+  If you install SQL Server using the default options, Windows authentication will be enabled and SQL Server authentication will be disabled. This post discusses how to enable SQL Server Authentication after…
+publishedAt: 2013-09-19
+draft: false
+tags:
+  - security
+  - sql-server
+originalUrl: https://ojdevelops.blogspot.com/2013/09/enabling-sql-server-authentication.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3caa557a1e4f-enabling-sql-server-authentication-after-installation.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3caa557a1e4f-enabling-sql-server-authentication-after-installation.jpg)
+
+If you install SQL Server using the default options, Windows authentication will be enabled and SQL Server authentication will be disabled. This post discusses how to enable SQL Server Authentication after installation and also enable the sa login.
+
+## Enabling SQL Server Authentication
+
+Here are the steps to enable SQL Server authentication:
+
+1.  Log in to SQL Server Management Studio using Windows authentication.
+2.  Right click the server then choose **Properties**.
+3.  Go to the **Security** page.
+4.  Click **"SQL Server and Windows Authentication mode"**.
+5.  Click **OK** twice.
+6.  Right click on the server then choose **Restart**.
+
+## Enabling the sa Login
+
+If you installed using the default options, chances are you don't know the password to the `sa` login. You can use a script to enable the `sa` login and change the password at the same time. Just execute the following script:
+
+```sql
+
+ALTER LOGIN sa ENABLE;
+GO
+
+ALTER LOGIN sa WITH PASSWORD = '<enterStrongPasswordHere>';
+GO
+```
+
+You should now be able to login with SQL Server Authentication using the `sa` login.

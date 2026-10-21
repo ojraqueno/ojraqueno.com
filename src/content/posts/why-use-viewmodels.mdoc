@@ -1,0 +1,113 @@
+---
+title: "Why Use ViewModels?"
+description: >-
+  Let's talk about a simple but important topic: why use viewmodels in our web applications. Specifically, the kind of viewmodels that we will be talking about are the ones that are used as parameters or return values…
+publishedAt: 2016-05-02
+draft: false
+tags:
+  - design
+  - entity-framework
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2016/05/why-use-viewmodels.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/395a0cd19f5b-why-use-viewmodels.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/395a0cd19f5b-why-use-viewmodels.jpg)
+
+Let's talk about a simple but important topic: why use viewmodels in our web applications. Specifically, the kind of viewmodels that we will be talking about are the ones that are used as parameters or return values in controllers.
+
+## Quick Review: ViewModels
+
+A viewmodel is a class that typically contains only a little amount of methods but a lot of properties. They represent some subset of an entity's properties (an entity being a class that directly maps to a database table).
+
+For example, for an entity like this:
+
+```csharp
+
+public class Person
+{
+ public int Id { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+}
+```
+
+There can be a viewmodel that looks like this:
+
+```csharp
+
+public class PersonViewModel
+{
+ public int Id { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+}
+```
+
+Then, it will be the `PersonViewModel` class that will be used as parameters in controllers or as return values, instead of the actual `Person` entity.
+
+## But They Look *Exactly* The Same!
+
+Of course, when the properties of the viewmodel are exactly the same as the properties of the actual entity, then we can return the actual entity directly. But most of the time, a viewmodel would contain a different set of properties. And even if the properties *were* exactly the same for some entities, I would recommend using viewmodels for everything anyway for the sake of consistency and easier code maintenance in the future.
+
+But back to the main question - why use viewmodels?
+
+From my own experience, I found that there are a few reasons why using viewmodels is preferable to using entities directly.
+
+## Serialization Issues
+
+The first one has to do with JSON serialization. If you are using an ORM such as Entity Framework, you know that it has the capability of retrieving related data together with the base entity. So, for example, when you retrieve an `BasketballTeam` entity, you will also be able to get the `Players` collection inside of it.
+
+The problem comes when we try to return the `BasketballTeam` entity as a JSON result object from a controller action. Remember that the `BasketballTeam` object has a collection of `Player` objects in it. In turn, each member of the `Players` collection has a reference back to their parent `BasketballTeam`.
+
+When the JSON serializer tries to serialize the `BasketballTeam` object, it goes through each property and then down to the `Players` collection. It will then go through each item in the `Players` collection. But each item in the `Players` collection also has a reference to their `BasketballTeam`. So the serializer runs through that again, and soon finds itself stuck in an infinite loop. There are ways to remedy this, but the problem will be prevented by using viewmodels in the first place.
+
+## Security Issues
+
+Let's say that our `Person` entity represents a member of a shopping website. Let's add an additional property, like so:
+
+```csharp
+
+public class Person
+{
+ public int Id { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+
+ // Gold members are given a huge discount
+ // whenever they purchase from our store
+ // The value of this should not come from user input
+ public bool IsGoldMember { get; set; }
+}
+```
+
+The value of the `IsGoldMember` property should not come from user input, but rather is computed based on some business rules. For example, the person must have had many successful orders, or perhaps have been a member for a long time, or some other rule.
+
+If we use the entity directly as a parameter in our controller action, like this:
+
+```csharp
+
+public ActionResult UpdatePerson(Person person)
+{
+ using (var db = new MyContext())
+ {
+ db.Persons.Attach(person);
+ db.Entry(person).State = EntityState.Modified;
+ db.SaveChanges();
+ }
+
+ // ...
+}
+```
+
+We will realize that we could inadvertently alter the value of the `IsGoldMember` property. Yes, we can put a check before updating the person, or maybe retrieve the entity from the database first then set the updated properties one by one. But, when using a viewmodel that doesn't contain the `IsGoldMember` property in the first place, we are making it *very explicit* that that property is not something that should be modified through user input.
+
+## Performance and Money Issues
+
+It is a common scenario that we need to display summary information about a certain entity. For example, when displaying entity details in search results, we only display just a few of the properties.
+
+If we use the entities directly, we are bringing down all of the properties (possibly including related entities) over the wire from our server to the browser. That can have a huge impact on performance, especially when related entities are involved.
+
+Related to the performance issue is the money issue. When hosting through a cloud provider, the billing is typically based on usage and not on some fixed rate. If we return the entities directly, there will be a lot of outbound data from the servers, and the charge will be proportional to the amount of data. When we use viewmodels that contain only the needed properties, the savings potential can be huge.
+
+## Conclusion
+
+In this post we talked about some reasons on why using viewmodels is a good idea. There may be other reasons, but for me, these ones are the most important. Using viewmodels is also an application of a programming principle which says that everything should be made as explicit as possible in order to avoid hard-to-detect bugs / behavior.

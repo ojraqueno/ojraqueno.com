@@ -1,0 +1,59 @@
+---
+title: Some Tips on Organizing Code
+description: >-
+  One of the signposts pointing to clean code is well-organized code files. Contrary to popular belief, aesthetics and organization are important when it comes to writing code, because having organized and structured…
+publishedAt: 2016-05-23
+draft: false
+tags:
+  - c-sharp
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2016/05/some-tips-on-organizing-code.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f0ab8832cdd1-some-tips-on-organizing-code.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f0ab8832cdd1-some-tips-on-organizing-code.jpg)
+
+One of the signposts pointing to clean code is well-organized code files. Contrary to popular belief, aesthetics and organization *are* important when it comes to writing code, because having organized and structured code improves readability. A piece of code written once will get read multiple times, so it's worth the time to put a little more effort into improving the code's readability. In this post I will be sharing some tips on how to make more organized and readable.
+
+## Keep Methods Short
+
+We've all heard about this tip about keeping methods short. But how do we apply it? The trick is to think about responsibilities and naming.
+
+When a method is long, it can be broken down by identifying bite-sized responsibilities that are part of the overall business logic but can stand on its own. Some examples of these operations are:
+
+-   Creating objects
+-   Transforming an object's type from one type to another
+-   Everything inside iteration blocks such as `foreach` loops or `for` loops
+-   Implementations of callback functions
+-   Mathematical computations
+
+When you encounter long methods, look for operations that fall into the above categories and extract them out into new methods. Doing this has many benefits:
+
+-   **It makes the method more approachable.** It can be disheartening when we are tasked with trying to understand a method that span 100 or 200 lines. We feel much more confident in approaching methods that are short rather than those that are long.
+-   **It makes the code more readable.** One side effect of extracting smaller methods is having more and better names. When we extract smaller methods, we are forced to think of a name, and the end result is that we end up giving a name to an otherwise unnamed but coherent code operation. This kind of naming promotes readability, something which I talked about in [a previous post](/blog/dont-make-me-think-about-your-code/).
+-   **It helps in better design.** Once we have been extracting methods for a while, we can more easily see patterns and duplicate code that we can eventually move to a different class. For example, frequent mapping code might lead us to create a mapping class or use something like [AutoMapper](/blog/automapper-quickstart/). Frequent custom creation of classes might lead us to use some kind of factory class.
+
+The traditional answer to the question of "when should I extract smaller methods" is "when it is reused or has the potential to be reused". I disagree; for the purposes of making the code more readable, I believe that methods should be extracted even without the possibility of reuse.
+
+## Alphabetize
+
+The second tip is to alphabetize code. In a class, put the properties and methods in alphabetical order.
+
+Here are some of the benefits of alphabetizing your code:
+
+-   **It will be easier to look for a specific property or method.** Alphabetized properties and methods combined with the **Collapse to Definitions** feature in Visual Studio (shortcut Ctrl + M + O) make it super easy to locate a particular property or method just by glancing over the code file.
+-   **Helps in class design by detecting outliers.** When you alphabetize properties and you feel that particular properties don't "fit in" and should be excluded in the ordering, that could be a sign that the class is too big or is taking on too many responsibilities.
+-   **It promotes putting effort into good naming.** Alphabetized properties and methods make little sense if names are not thought of. Having the goal of alphabetizing will force you to think about names more carefully.
+-   **It gives a more consistent feel throughout the solution.** Files are organized alphabetically in the Solution Explorer. Applying the same order in code files promotes a sense of consistency.
+
+One useful tool in helping to alphabetize code is **CodeMaid**. CodeMaid is a free Visual Studio Extension that provides multiple code organizing capabilities. One of them is an alphabetize feature, which you can easily use by using a shortcut key combination (Ctrl + M + Z). Another useful one that I use often is its Cleanup command (Ctrl + M + Space), which removes unused `using` statements and fixes whitespaces all in one go. You can find out more about the CodeMaid extension by going to [www.codemaid.net](http://www.codemaid.net/).
+
+## Kill Zombie Code
+
+**Zombie code** is any code that is commented out but is still included in the source. It is called "zombie" because even though it doesn't affect the program and is "dead", it feels as if the code is alive because it's affecting us in a negative way. Seeing zombie code leads us to ask why the code was commented out instead of being removed entirely, what its purpose is, and if someone else is still on planning to use it.
+
+Zombie code should be removed from the source code entirely. In case we need it back, we can take advantage of the History or Compare features of the source control program being used. When removing zombie code, I find it helpful to dedicate an entire code check-in / push to the effort and placing a helpful comment during check-in such as "removed zombie code".
+
+## Conclusion
+
+Keeping code organized promotes readability and maintainability. Some of the ways we can keep code organized are by using smaller methods, alphabetizing, and killing zombie code. Getting into the habit of writing clean code is essential in preventing or minimizing spaghetti code and making the code easier to change.
+
+I hope you found this post useful. How about you, how do you keep your code clean and organized? Let me know in the comments below!

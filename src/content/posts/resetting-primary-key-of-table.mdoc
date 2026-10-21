@@ -1,0 +1,20 @@
+---
+title: Resetting the Primary Key of a Table
+description: >-
+  This quick tip will show how to reset the primary key values for a table in SQL Server:
+publishedAt: 2013-05-14
+draft: false
+tags:
+  - sql-server
+originalUrl: https://ojdevelops.blogspot.com/2013/05/resetting-primary-key-of-table.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e82f8abaedd2-resetting-the-primary-key-of-a-table.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e82f8abaedd2-resetting-the-primary-key-of-a-table.jpg)
+
+This quick tip will show how to reset the primary key values for a table in SQL Server:
+
+```sql
+
+DBCC CHECKIDENT ([Table], RESEED, [NewCurrentValue])
+```
+
+Where \[Table\] is the table name and \[NewCurrentValue\] is the new current value of the id. This would ideally be set to 0, so that the next value (when a row is inserted) will be 1.

@@ -1,0 +1,67 @@
+---
+title: Adding Google Maps to Your AngularJS Application
+description: >-
+  Hi, in this post I will show how to add Google maps to your Angular application. At the end of this post, we will be able to see the map of the United States and we will be able to pan and zoom.
+publishedAt: 2016-10-04
+draft: false
+tags:
+  - angularjs
+  - google-maps
+originalUrl: https://ojdevelops.blogspot.com/2016/10/adding-google-maps-to-your-angular.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/dd7a8ddfa2e5-adding-google-maps-to-your-angular-application.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/dd7a8ddfa2e5-adding-google-maps-to-your-angular-application.jpg)
+
+Hi, in this post I will show how to add Google maps to your Angular application. At the end of this post, we will be able to see the map of the United States and we will be able to pan and zoom.
+
+## The Google Maps API
+
+As a consumer, we often use [Google Maps](https://www.google.com.ph/maps) when searching for a particular place. But as developers, we may want to integrate maps inside our own web application. Examples of web applications where maps are useful are real estate listing applications and fleet management applications.
+
+We can integrate Google maps into our application by using their JavaScript API. To use their JavaScript API, we just have to sign up and get an application key and load the necessary scripts into our web application.
+
+The Google Maps libraries are written in pure JavaScript. To use them effectively in an AngularJS application, we would need to create Angular directives that wrap the library's objects and functions. Fortunately for us, someone has done that already and is sharing his work at [Angular Google Maps](https://github.com/allenhwkim/angularjs-google-maps). We will be using that library later. But first, we need to sign up for a Google maps account.
+
+## Getting a Google Maps Account
+
+Here are the steps to get a Google Maps account:
+
+1.  Go to [https://developers.google.com/maps/](https://developers.google.com/maps/) and sign in using your Google account.
+2.  On the platform choices, choose "Web" (the other choices are Android, iOS, and Web Services).
+3.  Click "Get a Key". You will be redirected to the Google API Console site. Google provides a lot of APIs, and the Google API Console site lets you choose which APIs you want to have enabled for your account.
+4.  Click on the "Accept Terms" button. After a while, you will be asked what kind of credentials you need. Select "Google Maps JavaScript API".
+5.  You will be given a key. Save this key for later.
+
+At this point, we should already be able to use the Google Maps Javascript API using the given key. However, what we want is for Google maps to work in an Angular application. To this end, we will be using a library that lets us use the Google Maps API in an Angular way, with directives and all that good stuff.
+
+## AngularJS Google Maps
+
+We will be using the [AngularJS Google Maps](https://github.com/allenhwkim/angularjs-google-maps) library, also known as `ngmap`. Here are the steps to setup the library:
+
+1.  Get the script through bower (`ngmap`), npm (also `ngmap`), or via direct download from the project page.
+2.  Reference the Google Maps script file `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap`.
+3.  Reference `angular.js` and the script file `ng-map.min.js`.
+4.  Add `ngMap` as a dependency `var myApp = angular.module('myApp', ['ngMap']);`.
+
+Now we have everything we need, it's time to see some maps!
+
+## Using AngularJS Google Maps
+
+Let's put a map that is centered on the United States. To do that, just insert the following into the HTML markup:
+
+```xml
+
+<ng-map center="[41,-87]" zoom="4"></ng-map>
+```
+
+And that's it! The `ng-map` directive will take care of the rest. The `center` attribute represents the latitude and longitude coordinates (the center of the United States is at latitude 41 and longitude -87, approximately), and the `zoom` attribute represents the zoom (a higher number means a closer zoom).
+
+Panning and zooming the map are enabled by default. You can also switch to satellite view and street view. Try it out!
+
+Getting the most from Google Maps is largely a matter of knowing what their API offers. Here are some great resources:
+
+-   The [Google Maps Javascript API Documentation](https://developers.google.com/maps/documentation/javascript/)
+-   The [AngularJS Google Maps demo page](https://ngmap.github.io/)
+
+## Conclusion
+
+In this post we learned how to put Google Maps into an angular application. What we needed are a Google Maps API key, the Google Maps script, and the AngularJS Google Maps script. Showing a map on the page was as simple as putting an `ng-map` directive.

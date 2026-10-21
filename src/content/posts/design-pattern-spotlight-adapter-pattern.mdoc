@@ -1,0 +1,75 @@
+---
+title: "Design Pattern Spotlight: Adapter Pattern"
+description: >-
+  The Adapter Pattern 's intent is: "convert the interface of a class into another interface clients expect. Adapter lets classes work together that couldn't otherwise because of incompatible interfaces" (taken from…
+publishedAt: 2016-06-02
+draft: false
+tags:
+  - c-sharp
+  - design-pattern
+originalUrl: https://ojdevelops.blogspot.com/2016/06/design-pattern-spotlight-adapter-pattern.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7c910366c5e0-design-pattern-spotlight-adapter-pattern.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7c910366c5e0-design-pattern-spotlight-adapter-pattern.jpg)
+
+The **Adapter Pattern**'s intent is: "convert the interface of a class into another interface clients expect. Adapter lets classes work together that couldn't otherwise because of incompatible interfaces" (taken from the Design Patterns book). That statement seems intimidating at first, but the core concept is really simple. In fact, I won't be surprised if you are already using this pattern in your application. Let's talk more about it below.
+
+## The Requirement
+
+Let's say that you are working on a financial system, and you are given a requirement to implement the following interface:
+
+```csharp
+
+public interface ITaxCalculator
+{
+ decimal ComputeTax(decimal monthlySalary, double percentage);
+}
+```
+
+Further, say that you are not able to change the clients of this interface. (This scenario is not uncommon, specially when working with different teams on a large application.) The only thing you know is that you *have* to come up with a class that implements this interface.
+
+## An Implementation
+
+Now, instead of implementing the method yourself, what you do is to search for a NuGet package that already does the trick. And luckily, you found one! Except that there's one problem, the parameters used by the package class are in reverse order:
+
+```csharp
+
+public interface ITaxCalculatorFromPackage
+{
+ decimal ComputeTax(double percentage, decimal monthlySalary);
+}
+```
+
+So, what you do is you create a class that implements `ITaxCalculator` and implement its `ComputeTax` method. However, in the implementation, you are actually using the package you found:
+
+```csharp
+
+public class TaxCalculator : ITaxCalculator
+{
+ public decimal ComputeTax(decimal monthlySalary, double percentage)
+ {
+ ITaxCalculatorFromPackage taxCalculatorFromPackage = new TaxCalculatorFromPackage();
+
+ return taxCalculatorFromPackage.ComputeTax(percentage, monthlySalary);
+ }
+}
+```
+
+And it works fine.
+
+## Okay... So What's Next?
+
+There is no next. **That is already an example of using the adapter pattern**.
+
+Shocked? Scared? Confused? Told you the concept is really simple :) Let's go back to the intent and examine our example in that context.
+
+Here is the intent again: "convert the **interface of a class** into another **interface clients expect**. **Adapter** lets classes work together that couldn't otherwise because of incompatible interfaces".
+
+In our example, the "interface of a class" is the interface we got from the NuGet package (`ITaxCalculatorFromPackage`). The "interface clients expect" is the interface we were required to implement (`ITaxCalculator`). The "adapter" is our very own `TaxCalculator` class.
+
+That's all there is to it. Just like how an electrical adapter is able to make a round plug work with a square socket, our `TaxCalculator` adapter class is able to make the clients using the `ITaxCalculator` interface work with the `ITaxCalculatorFromPackage` interface.
+
+The key thing to note is this: in this scenario, it is difficult or impossible to change the clients using `ITaxCalculator`. If it weren't, then we could tell the clients to simply stop using `ITaxCalculator` altogether and start using `ITaxCalculatorFromPackage` directly instead, making an adapter class unnecessary.
+
+## Conclusion
+
+In this post we saw an implementation of the Adapter pattern. The Adapter pattern lets two incompatible interfaces work together by creating an Adpater class. It is a very simple pattern that you most likely have already been using in your day-to-day development. Don't be fooled by its simplicity though - this is a very powerful pattern that can be of great use, especially when dealing with complicated interfaces and implementations.

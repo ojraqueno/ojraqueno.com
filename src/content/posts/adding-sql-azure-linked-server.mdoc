@@ -1,0 +1,52 @@
+---
+title: Adding an SQL Azure Linked Server
+description: >-
+  When adding an SQL Azure Linked Server through SSMS, you will encounter an error if you go through the normal way (Server Objects > Linked Servers > New Linked Server). That is because the New Linked Server wizard…
+publishedAt: 2015-01-10
+draft: false
+tags:
+  - azure
+  - sql-server
+originalUrl: https://ojdevelops.blogspot.com/2015/01/adding-sql-azure-linked-server.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/752b9ea5a9fe-adding-an-sql-azure-linked-server.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/752b9ea5a9fe-adding-an-sql-azure-linked-server.jpg)
+
+When adding an SQL Azure Linked Server through SSMS, you will encounter an error if you go through the normal way (Server Objects > Linked Servers > New Linked Server). That is because the New Linked Server wizard does not allow you to specify the catalog name if the chosen Server Type is SQL Server, which should be chosen when adding an SQL Azure Linked Server. To accomplish this, the stored procedure `sp_addlinkedserver` should be used.
+
+## Add the Linked Server
+
+Following is a sample script using `sp_addlinkedserver`:
+
+```sql
+
+EXEC sp_addlinkedserver
+@server='serverFriendlyName',
+@srvproduct='', 
+@provider='sqlncli',
+@datasrc='tcp:xxxxxxxxxx.database.windows.net,1433',
+@location='',
+@provstr='',
+@catalog='databaseName'
+```
+
+## Adding Credentials
+
+You can add SQL Server Authentication credentials to the linked server by using the stored procedure `sp_addlinkedsrvlogin`:
+
+```sql
+
+exec sp_addlinkedsrvlogin 'serverFriendlyName', 'FALSE', NULL, 'username', 'password';
+```
+
+## Querying the Linked Server
+
+A sample query would look like:
+
+```sql
+
+SELECT * FROM [serverFriendlyName].[databaseName].[schema].[tableName]
+```
+
+## Conclusion
+
+In this post I showed how to add an SQL Azure Linked Server with credentials. I also showed a sample statement that queries the linked server.

@@ -1,0 +1,114 @@
+---
+title: Using AntiForgeryTokens in ASP.NET MVC with AngularJS
+description: >-
+  Protection against CSRF (use of AntiForgery tokens) is supported in both the ASP.NET MVC and AngularJS frameworks. However, they have different implementations. What this means is that the default implementation of…
+publishedAt: 2016-01-10
+draft: false
+tags:
+  - angularjs
+  - asp-net
+  - c-sharp
+  - mvc
+  - security
+originalUrl: https://ojdevelops.blogspot.com/2016/01/using-antiforgerytokens-in-aspnet-mvc.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f74f36eb40c4-using-antiforgery-tokens-in-asp.net-mvc-with-angularjs.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f74f36eb40c4-using-antiforgery-tokens-in-asp.net-mvc-with-angularjs.jpg)
+
+Protection against CSRF (use of AntiForgery tokens) is supported in both the ASP.NET MVC and AngularJS frameworks. However, they have different implementations. What this means is that the default implementation of ASP.NET MVC for AntiForgery tokens will not work out-of-the box on an AngularJS front-end. In this post we will look at this in more detail and come up with a solution to the problem.
+
+## Form Values vs JSON
+
+In a previous post about [Using AntiForgery Tokens in ASP.NET MVC](/blog/using-antiforgery-tokens-in-aspnet-mvc/) we saw that the framework checks for the token in the form values. However, when posting data through AngularJS, the values are in a JSON format. What this means is that the framework will not be able to detect the value presence of a token, and the request will fail with the error "The required anti-forgery form field "\_\_RequestVerificationToken" is not present.".
+
+Sample HTTP POST request body using form values:
+
+```plaintext
+
+Email=foo%40foo.com&Message=message&__RequestVerificationToken=[truncated]
+```
+
+Sample HTTP POST request body using JSON:
+
+```plaintext
+
+{"email":"foo@foo.com","message":"message","__RequestVerificationToken":"[truncated]"}
+```
+
+## Tokens in Header
+
+There can be many solutions to this problem. In this post we will be implementing a "Token in Header" solution. Our solution will have the following characteristics:
+
+1.  We will tell the ASP.NET MVC Framework to check for the AntiForgery token in the request header, rather than in the request body form values.
+2.  We will tell AngularJS to include an AntiForgery token in the header for all POST requests.
+
+## Check for the AntiForgery Token in the Request Header
+
+First, we will create an ASP.NET MVC filter that knows how to check for the AntiForgery token in the header:
+
+```csharp
+
+public class ValidateAntiForgeryHeader : FilterAttribute, IAuthorizationFilter
+{
+ private const string KEY_NAME = "__RequestVerificationToken";
+
+ public void OnAuthorization(AuthorizationContext filterContext)
+ {
+ string clientToken = filterContext.RequestContext.HttpContext.Request.Headers.Get(KEY_NAME);
+ if (clientToken == null) throw new HttpAntiForgeryException(String.Format("Header does not contain {0}", KEY_NAME));
+
+ string serverToken = filterContext.HttpContext.Request.Cookies.Get(KEY_NAME).Value;
+ if (serverToken == null) throw new HttpAntiForgeryException(String.Format("Cookies does not contain {0}", KEY_NAME));
+
+ AntiForgery.Validate(serverToken, clientToken);
+ }
+}
+```
+
+In our class we are implementing the `OnAuthorization` method of `IAuthorizationFilter`. In the method body, we are simply retrieving the client token and the server token and then using the `AntiForgery.Validate` method to handle the actual validation. Note how we are getting the `clientToken` from the request headers.
+
+Because our class inherits from `FilterAttribute`, we will be able to use our class like ordinary ASP.NET MVC filters - that is, we can use square brackets to apply it to action methods:
+
+```csharp
+
+[HttpPost]
+//[ValidateAntiForgeryToken] - don't check for the token in form values
+[ValidateAntiForgeryHeader] // - use our own class to check for the token in the header
+public ActionResult MyAction(MyModel myModel)
+{
+ // the code block in the controller will not execute
+ // if the token check fails (if the token is not found in the header)
+}
+```
+
+## Put an AntiForgery Token in the Request Header for All POST Requests
+
+Next, we will have to include an AntiForgery token in the request header for all POST requests.
+
+We will still be utilizing the `@Html.AntiForgeryToken` helper method to create the token for us. But instead of putting it individual forms, we can just use one and use it for the entire site. So, in the `_Layout.cshtml` view, we can add the following code just after the `body` element:
+
+```xml
+
+<form id="antiForgeryForm">
+ @Html.AntiForgeryToken()
+</form>
+```
+
+Finally, we need to tell the Angular framework to get the value from this field and put it in the header for all POST requests. We can do so inside the `config` method of our angular root module:
+
+```javascript
+
+var myApp = angular.module('myApp', []);
+
+myApp.config(['$httpProvider', function ($httpProvider) {
+ var antiForgeryToken = document.getElementById('antiForgeryForm').childNodes[1].value;
+ $httpProvider.defaults.headers.post['__RequestVerificationToken'] = antiForgeryToken;
+}]);
+```
+
+In the `config` section, we are leveraging the `$httpProvider` supplied by AngularJS. In the first line, we are getting the value of the token we created in the previous step. Then, we add that header to all POST requests by using the `defaults.headers.post` property of `$httpProvider`.
+
+And that's it! Once this is in place, we should be able to see an entry for '\_\_RequestVerificationToken' in the header of all POST requests. Then, in the server, this will get picked up by our `ValidateAntiForgeryHeader` class and processed appropriately.
+
+## Conclusion
+
+In this post we talked about making AntiForgery tokens work with ASP.NET MVC and AngularJS. They both support AntiForgery tokens but have different implementation paradigms, so we had to write a bit of custom code to get it working. Our solution involved moving the AntiForgery token into the header, which required us to create an ASP.NET MVC filter that knows how to read tokens from headers and an AngularJS config implementation that knows how to put tokens in headers.
