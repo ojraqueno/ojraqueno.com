@@ -1,0 +1,202 @@
+---
+title: Entity Framework Search
+description: >-
+  Search is a common requirement in most business applications. In this post we will examine searching in Entity Framework and create a query object that encapsulates the common functionality of filtering, sorting, and…
+publishedAt: 2017-06-18
+draft: false
+tags:
+  - entity-framework
+originalUrl: https://ojdevelops.blogspot.com/2017/06/entity-framework-search.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bde45b0341e5-entity-framework-search.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bde45b0341e5-entity-framework-search.jpg)
+
+Search is a common requirement in most business applications. In this post we will examine searching in Entity Framework and create a query object that encapsulates the common functionality of filtering, sorting, and paging.
+
+## Setup
+
+The entity we will be using for test purposes is a `User` class:
+
+```csharp
+
+public class User
+{
+ public int Id { get; set; }
+ public DateTime? LastLoggedIn { get; set; }
+ public string Name { get; set; }
+}
+```
+
+After running migrations, this class will be represented on the database as a `Users` table with `Id` as the primary key, `LastLoggedIn` as a nullable datetime and `Name` as a nvarchar(max).
+
+## The Query Object
+
+Following are the common search requirements in search:
+
+-   Filtering
+-   Paging
+-   Sorting (change which column to sort on and change sort order)
+
+We can create a generic, reusable query object class that captures these requirements. But first, let's create some supporting constructs.
+
+#### Sort Direction
+
+First, let's create an `enum` that represents the sort direction:
+
+```csharp
+
+public enum SortDirection
+{
+ Ascending = 0,
+ Descending = 1
+}
+```
+
+If you're building a web application, you can also use the built-in SortDirection available in the Microsoft.AspNet.WebPages NuGet package.
+
+#### Order By
+
+Entity Framework takes an `Expression<Func<T, TKey>>` as a parameter in its `OrderBy` method. However, what we usually have is the column name and the sort direction.
+
+To make this work we will create an extension method on `IQueryable<T>` that takes a column name and sort direction and returns the appropriate `IOrderedQueryable<T>` result:
+
+```csharp
+
+public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, string property, SortDirection sortDirection)
+{
+ return sortDirection == SortDirection.Ascending ?
+ ApplyOrder(source, property, "OrderBy") :
+ ApplyOrder(source, property, "OrderByDescending");
+}
+
+private static IOrderedQueryable<T> ApplyOrder<T>(IQueryable<T> source, string property, string methodName)
+{
+ string[] propertyNames = property.Split('.');
+ Type type = typeof(T);
+ ParameterExpression parameterExpression = Expression.Parameter(type, "x");
+ Expression expression = parameterExpression;
+
+ foreach (string propertyName in propertyNames)
+ {
+ // use reflection (not ComponentModel) to mirror LINQ
+ var propertyInfo = type.GetProperty(propertyName);
+ expression = Expression.Property(expression, propertyInfo);
+ type = propertyInfo.PropertyType;
+ }
+
+ Type delegateType = typeof(Func<,>).MakeGenericType(typeof(T), type);
+ LambdaExpression lambda = Expression.Lambda(delegateType, expression, parameterExpression);
+
+ object result = typeof(Queryable)
+ .GetMethods()
+ .Single(method => method.Name == methodName &&
+ method.IsGenericMethodDefinition &&
+ method.GetGenericArguments().Length == 2 &&
+ method.GetParameters().Length == 2)
+ .MakeGenericMethod(typeof(T), type)
+ .Invoke(null, new object[] { source, lambda });
+
+ return (IOrderedQueryable<T>)result;
+}
+```
+
+The extension method is `OrderBy` but the meat of the implementation is in `ApplyOrder`, which takes in the property name and method name and returns the appropriate `IOrderedQueryable<T>`.
+
+(Note: I got the code from StackOverflow some time ago. Unfortunately I can't find the source anymore.)
+
+#### The Query<T> Object
+
+Now, we are in the position to write our generic query class:
+
+```csharp
+
+public class Query<T>
+{
+ public Query(IQueryable<T> baseQueryable, int pageNumber, int pageSize, string sortBy, SortDirection sortDirection)
+ {
+ BaseQueryable = baseQueryable ?? throw new ArgumentNullException(nameof(baseQueryable));
+ PageNumber = pageNumber;
+ PageSize = pageSize;
+ SortBy = sortBy;
+ SortDirection = sortDirection;
+ }
+
+ public IQueryable<T> BaseQueryable { get; private set; }
+ public int PageNumber { get; private set; }
+ public int PageSize { get; private set; }
+ public IEnumerable<T> Results { get; private set; }
+ public string SortBy { get; private set; }
+ public SortDirection SortDirection { get; private set; }
+
+ public void AddPredicate(Expression<Func<T, bool>> predicate)
+ {
+ BaseQueryable = BaseQueryable.Where(predicate);
+ }
+
+ public void Execute()
+ {
+ Results = GetQuery().ToList();
+ }
+
+ private IQueryable<T> GetQuery()
+ {
+ return String.IsNullOrWhiteSpace(SortBy) ?
+ BaseQueryable :
+ BaseQueryable.OrderBy(SortBy, SortDirection)
+ .Skip((PageNumber - 1) * PageSize)
+ .Take(PageSize);
+ }
+}
+```
+
+When this class is instantiated, we supply a baseQueryable (ie. a `DbSet` of the entity we want to search on), the page number, page size, sort by column name, and sort direction. These are then stored in properties.
+
+To add filters, we use the `AddPredicate` method, which modifies the base queryable with the filter being added. Multiple filters can be added in this fashion.
+
+Finally, to get the results of the query, we run the `Execute` method. That executes the query and stores the results in the `Results` property.
+
+Note that all of the properties' setters are private. Though this is not strictly required, it makes for more maintainable code. From the perspective of clients, this class is immutable.
+
+## Using the Query Object
+
+Here is how the query object can be used:
+
+```csharp
+
+// Paging / Sorting
+var pageNumber = 1;
+var pageSize = 10;
+var sortBy = nameof(User.LastLoggedIn);
+var sortDirection = SortDirection.Ascending;
+
+// Filters
+var name = "J";
+var minLastLoggedIn = DateTime.Now.Date;
+
+using (var db = new ApplicationDbContext())
+{
+ var userQuery = new Query<User>(db.Users, pageNumber, pageSize, sortBy, sortDirection);
+
+ if (!String.IsNullOrWhiteSpace(name))
+ {
+ userQuery.AddPredicate(u => u.Name.Contains(name));
+ }
+
+ userQuery.AddPredicate(u => u.LastLoggedIn > minLastLoggedIn);
+
+ userQuery.Execute();
+
+ // Results are in userQuery.Results
+}
+```
+
+First off, we set the parameters relevant to paging, sorting, and filtering. These are all hardcoded in the sample code, but you can imagine them coming in from a user interface or web request.
+
+Then, inside the scope of a `DbContext`, we instantiate the `Query` object and pass in the relevant parameters. Note that we are passing in the `DbSet<User>` as the base queryable.
+
+To add filters, we use the `AddPredicate` method. Here we are adding two filters, one for the name and one for the last logged in date.
+
+After calling the `Execute` method, we can inspect the `Results` property to see the entities retrieved.
+
+## Conclusion
+
+In this post we created a generic query object that can be used to encapsulate search functionality, including filtering, sorting, and paging. This query object is fairly straightforward to use and can be used on any Entity Framework entity type.

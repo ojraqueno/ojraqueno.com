@@ -1,0 +1,151 @@
+---
+title: Login with AngularJS and ASP.NET Web API
+description: >-
+  When creating a non-Web API ASP.NET MVC project using Individual Accounts, the generated template makes use of Forms Authentication. When logging in using Forms Authentication, a cookie is stored on the client's…
+publishedAt: 2014-12-26
+draft: false
+tags:
+  - angularjs
+  - security
+  - web-api
+originalUrl: https://ojdevelops.blogspot.com/2014/12/login-with-angularjs-and-aspnet-mvc-web.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c1370d664808-login-with-angularjs-and-asp.net-web-api.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c1370d664808-login-with-angularjs-and-asp.net-web-api.jpg)
+
+When creating a non-Web API ASP.NET MVC project using Individual Accounts, the generated template makes use of Forms Authentication. When logging in using Forms Authentication, a cookie is stored on the client's machine and that cookie is included by the browser in each future request.
+
+Instead of Forms Authentication, the Web API Individual Accounts project template includes code that makes use of **bearer tokens** for authentication / authorization. In this post, I will show how login using the bearer token can be achieved using AngularJS as the front-end framework.
+
+I will be using **Visual Studio Express 2013 for Web Update 4**, **Web API 2.2**, and **ASP.NET Identity 2.1**.
+
+## Overview: Logging In == Getting a Bearer Token
+
+A login request includes three things:
+
+1.  Username
+2.  Password
+3.  Grant Type
+
+Upon a successful login, the login response will include the bearer token. This token should be included in the http headers of any authorized request. An http request is considered as authorized if a valid token is included.
+
+The token is not a cookie, so the browser will not automatically send it in all future requests. Instead, the application should take care of including the token in each request. Later I will describe how AngularJS can do this using $http interceptors.
+
+## Getting the Token
+
+In this post, I will put the $http dependency on the controller, though of course the best practice is to put such dependencies in services. Here is an example controller:
+
+```javascript
+
+myApp.controller('myCtrl', ['$scope', '$http', function ($scope, $http) {
+ 
+ $scope.username = null;
+ $scope.password = null;
+
+ $scope.login = function () {
+ if (!$scope.username || !$scope.password) {
+ return;
+ }
+
+ var url = 'Token';
+ var data = 'username=' + $scope.username +
+ '&password=' + $scope.password +
+ '&grant_type=password';
+ var config = {
+ headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+ };
+
+ $http.post(url, data, config).
+ success(function (data) {
+ console.log(data.access_token);
+ }).
+ error(function () {
+ // errors here, including:
+ // invalid_grant_type
+ // invalid username/password
+ });
+ };
+}]);
+```
+
+A few things to note about the request parameters:
+
+-   **url** - This is the specified `TokenEndpointPath` as seen in `Startup.Auth.cs` (in App\_Start).
+-   **data** - The data should not be in json format, but rather, it needs to be a string. There are other ways to do the formatting, but here I just used string concatenation for clarity. The grant type is always 'password'.
+-   **config** - A content type of `application/x-www-form-urlencoded` should be used instead of `application/json` (the AngularJS $http default).
+
+If the login is successful, the data will include an `access_token` attribute. This is the token that should be included in all future requests.
+
+## Using the Token
+
+Let us store the token in `sessionStorage`.
+
+```javascript
+
+myApp.controller('myCtrl', ['$scope', '$http', function ($scope, $http) {
+
+ // ...
+
+ $scope.login = function () {
+
+ // ...
+
+ $http.post(url, data, config).
+ success(function (data) {
+ sessionStorage.setItem('bearerToken', data.access_token);
+ }).
+ error(function () {
+ // ...
+ });
+ };
+
+}]);
+```
+
+We can set up an `$http` interceptor to automatically include the token in requests.
+
+```javascript
+
+myApp.config(['$provide', '$httpProvider', function ($provide, $httpProvider) {
+
+ $provide.factory('myInterceptor', ['$q', function ($q) {
+ return {
+ request: function (config) {
+ var bearerToken = sessionStorage.getItem('bearerToken');
+ if (bearerToken) {
+ config.headers['Authorization'] = 'Bearer ' + bearerToken;
+ }
+
+ return config || $q.when(config);
+ }
+ };
+ }]);
+
+ $httpProvider.interceptors.push('myInterceptor');
+
+}]);
+```
+
+So once a token is present, an http header of `Authorization: Bearer [token]` will be included in all requests. \[token\] of course will be the value of the token you got after the successful login.
+
+## Logging Out
+
+Without the token, we will not be able to make authorized requests. So "logging out" is simply a matter of removing the token.
+
+```javascript
+
+myApp.controller('myCtrl', ['$scope', '$http', function ($scope, $http) {
+
+ // ...
+
+ $scope.logOut = function () {
+ sessionStorage.removeItem('bearerToken');
+ };
+
+}]);
+```
+
+Note that `sessionStorage` will be cleared if the user closes the browser tab.
+
+## Conclusion
+
+In this post I showed how to perform login using AngularJS + ASP.NET Web API using the bearer token. I showed how to correctly format the login http request and how to include the token in all http requests using an interceptor. I also showed how to log out.

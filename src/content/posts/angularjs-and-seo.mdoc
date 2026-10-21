@@ -1,0 +1,190 @@
+---
+title: AngularJS and SEO
+description: >-
+  There is no doubt that JavaScript MVC / MVVM frameworks such as AngularJS provide better experiences for both developers and users alike. However, there are some caveats that we should be aware of when using this…
+publishedAt: 2015-09-26
+draft: false
+tags:
+  - angularjs
+  - asp-net
+  - mvc
+  - seo
+originalUrl: https://ojdevelops.blogspot.com/2015/09/angularjs-and-seo.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bb54dfd667bd-angularjs-and-seo.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bb54dfd667bd-angularjs-and-seo.jpg)
+
+There is no doubt that JavaScript MVC / MVVM frameworks such as AngularJS provide better experiences for both developers and users alike. However, there are some caveats that we should be aware of when using this framework. Specifically, search engines might not be able to read the content in our applications if we are using the data binding features provided by these frameworks. In this post I will compare two scenarios: one using server-side data binding and one using client-side data binding and talk about their SEO implications.
+
+## Server-Side Data Binding
+
+First, let's set up a model. I have decided to abstract the three-column model found on the Index view of the default project template. So our model will be:
+
+```csharp
+
+public class IndexModel
+{
+ public string Title { get; set; }
+ public string Summary { get; set; }
+ public string Link { get; set; }
+}
+```
+
+Then in `Home/ndex.cshtml`, let's declare the model:
+
+```csharp
+
+@model IEnumerable<IndexModel>
+```
+
+And replace the three bootstrap columns with a foreach:
+
+```xml
+
+<div class="row">
+ @foreach (var indexModel in Model)
+ {
+ <div class="col-md-4">
+ <h2>@indexModel.Title</h2>
+ <p>@indexModel.Summary</p>
+ <p><a class="btn btn-default" href="@indexModel.Link">Learn more &raquo;</a></p>
+ </div>
+ }
+</div>
+```
+
+Finally, in `HomeController.cs`, let's create a dummy model enumerable:
+
+```csharp
+
+private IEnumerable<IndexModel> indexModels = new List<IndexModel>
+{
+ new IndexModel { Title = "Getting started", Summary = "ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that enables a clean separation of concerns and gives you full control over markup for enjoyable, agile development.", Link = "http://go.microsoft.com/fwlink/?LinkId=301865" },
+ new IndexModel { Title = "Get more libraries", Summary = "NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.", Link = "http://go.microsoft.com/fwlink/?LinkId=301866" },
+ new IndexModel { Title = "Web Hosting", Summary = "You can easily find a web hosting company that offers the right mix of features and price for your applications.", Link = "http://go.microsoft.com/fwlink/?LinkId=301867" },
+};
+```
+
+And add it to the index action:
+
+```csharp
+
+public ActionResult Index()
+{
+ return View(indexModels);
+}
+```
+
+When the application is started, the home page will look the same. But this time, the content of the columns will come from a model.
+
+## Client-Side Data Binding
+
+To do the client side data binding, let's create a couple of new actions in `HomeController.cs`. The first is an `IndexAngular` action for a view:
+
+```csharp
+
+public ActionResult IndexAngular()
+{
+ return View();
+}
+```
+
+And the second is a `GetIndexModels` action which returns json data:
+
+```csharp
+
+public JsonResult GetIndexModels()
+{
+ return Json(indexModels, JsonRequestBehavior.AllowGet);
+}
+```
+
+New let's create the `IndexAngular` view. The markup will be the same as the original Index view. But instead of placing the bootstrap columns in a `foreach` loop, we will use `ng-repeat` instead:
+
+```xml
+
+<div class="row" ng-app="app" ng-controller="IndexController as vm">
+ <div class="col-md-4" ng-repeat="indexModel in indexModels">
+ <h2>{{indexModel.Title}}</h2>
+ <p>{{indexModel.Summary}}</p>
+ <p><a class="btn btn-default" ng-href="{{indexModel.Link}}">Learn more &raquo;</a></p>
+ </div>
+</div>
+```
+
+Let's also place a `scripts` section on the same view to implement our angular application:
+
+```javascript
+
+@section scripts {
+ <script src="~/Scripts/angular.js"></script>
+ <script>
+ var app = angular.module('app', []);
+
+ angular.module('app').controller('IndexController', ['$scope', '$http', function ($scope, $http) {
+ $http.get('/Home/GetIndexModels').then(function (response) {
+ $scope.indexModels = response.data;
+ });
+ }]); 
+ </script>
+}
+```
+
+When we run the app and go to this view, the contents of the columns will still be the same. But this time, the data-binding is done on the client.
+
+## Comparing Server-Side and Client-Side Data Binding
+
+Now let's compare the two methods by inspecting the HTTP responses through fiddler.
+
+First let's look at the relevant bootstrap `row` from the server-side binding view `Index`:
+
+```xml
+
+<div class="row">
+ <div class="col-md-4">
+ <h2>Getting started</h2>
+ <p>ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that enables a clean separation of concerns and gives you full control over markup for enjoyable, agile development.</p>
+ <p><a class="btn btn-default" href="http://go.microsoft.com/fwlink/?LinkId=301865">Learn more &raquo;</a></p>
+ </div>
+ <div class="col-md-4">
+ <h2>Get more libraries</h2>
+ <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
+ <p><a class="btn btn-default" href="http://go.microsoft.com/fwlink/?LinkId=301866">Learn more &raquo;</a></p>
+ </div>
+ <div class="col-md-4">
+ <h2>Web Hosting</h2>
+ <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
+ <p><a class="btn btn-default" href="http://go.microsoft.com/fwlink/?LinkId=301867">Learn more &raquo;</a></p>
+ </div>
+</div>
+```
+
+The data was bound on the server before the response was sent to the client, so all of the data is there.
+
+Now let's look at the relevant bootstrap `row` from the client-side binding view `IndexAngular`:
+
+```xml
+
+<div class="row" ng-app="app" ng-controller="IndexController as vm">
+ <div class="col-md-4" ng-repeat="indexModel in indexModels">
+ <h2>{{indexModel.Title}}</h2>
+ <p>{{indexModel.Summary}}</p>
+ <p><a class="btn btn-default" ng-href="{{indexModel.Link}}">Learn more &raquo;</a></p>
+ </div>
+</div>
+```
+
+We can see that the data hasn't been binded yet. The response seen is exactly what we have in the view. The data will eventually be binded by Angular on the browser.
+
+## SEO Implications
+
+There are thousands of factors that search engines use to determine whether our sites will show up on the search results page from a search term. One important factor is the actual content of the page. When we have a site that sells bicycles, for example, phrases such as "bicycle shop" or "brand new bike for sale" will tell search engines that our site is relevant to bike-related searches.
+
+Now imagine that our bike shop has a product page that lists what kinds of bikes we have for sale. This product page will be data-driven and the contents will come from a data store, similar to how we have index models in our example.
+
+If the data is bound server-side, then the http response will already include the relevant content, such as the names of the bikes, price, images, etc. Search engines would be able to see this data and use it to determine the relevancy of the page.
+
+However, when the data is bound client-side, search engines would only see the template, and not the actual data. In our example, it will see the directives such as `ng-repeat` and the `{{}}` bindings. From an SEO point of view, this may not be the desired result.
+
+## Conclusion
+
+In this post we compared server-side and client-side data binding and how it affects SEO. When SEO is of primary importance, it might be better to use server-side binding so that search engines can see the relevant content on our pages.

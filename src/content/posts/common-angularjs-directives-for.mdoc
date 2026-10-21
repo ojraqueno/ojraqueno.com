@@ -1,0 +1,74 @@
+---
+title: Common AngularJS Directives for Designers
+description: >-
+  AngularJS is not only for UI developers, but also for UI designers. In fact, the separation of concerns and readability that AngularJS brings enable smooth collaboration between designers and developers. Here are…
+publishedAt: 2014-02-25
+draft: false
+tags:
+  - angularjs
+  - javascript
+originalUrl: https://ojdevelops.blogspot.com/2014/02/common-angularjs-directives-for.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/96674838fa00-common-angularjs-directives-for-designers.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/96674838fa00-common-angularjs-directives-for-designers.jpg)
+
+AngularJS is not only for UI developers, but also for UI designers. In fact, the separation of concerns and readability that AngularJS brings enable smooth collaboration between designers and developers. Here are some common directives that designers will encounter in AngularJS.
+
+## ng-app
+
+Of course, the only required directive **ng-app** is always there. Ng-app bootstraps the application and enables all Angular magic to happen.
+
+## ng-show / ng-hide
+
+The **ng-show** and **ng-hide** directives are used to conditionally show or hide elements based on a condition. For example:
+
+```xml
+
+<h1 ng-show="showHeader">AngularJS is Awesome!</h1>
+```
+
+In that example, we are saying "show this h1 element when a value named 'showHeader' is true." The type of the 'showHeader' variable is bool and its value is typically set in a separate JavaScript file. Ng-hide does the reverse; it hides the element when the condition evaluates to true.
+
+Note that you can use that directive on any html element, not just on h1. Also, you can set the expression directly in the view without enclosing it in a variable, and you can also use a function instead of a variable. So things like
+
+```xml
+
+<h1 ng-show="items.Length == 5">Some Significant Message</h1>
+<h1 ng-show="shouldShowMessage()">Some Significant Message</h1>
+```
+
+are also valid.
+
+## ng-class
+
+The **ng-class** directive lets you conditionally apply classes based on a certain condition. Let's say you have a CSS class named 'warning' and you want to display it only when there is an error in the page. There are many ways of using ng-class, but this would do the trick:
+
+```xml
+
+<p ng-class="{warning: hasWarning}">Error</p>
+```
+
+That says: "apply the 'warning' class when a variable named 'hasWarning' evaluates to true." The curly braces take a series of key-value pairs separated by commas. (In that example, there is just one key-value pair.) Each key is a name of a CSS class and each value is an expression that evaluates to a boolean value. If the expression evaluates to true, the CSS class in the key is applied. If not, the class is not applied.
+
+Like ng-show and ng-hide, the expression can be inline, contained in a variable, or returned from a function. So the following would also work:
+
+```xml
+
+<p ng-class="{warning: warnings.Length > 0}">Error</p>
+<p ng-class="{warning: hasWarning()}">Error</p>
+```
+
+Here is an example where there is more than one key-value pair:
+
+```xml
+
+<table ng-class="{striped: stripedChecked, bordered: borderedChecked}">...</table>
+```
+
+If there is more than one CSS class that should be applied when the condition is true, you can put both CSS classes in surrounded by single quotes:
+
+```xml
+
+<div ng-class={'noOverflowX noOverflowY': disableScroll}>...</div>
+```
+
+That says: "apply the classes 'noOverflowX' and 'noOverflowY' when a variable named 'disableScroll' evaluates to true".

@@ -1,0 +1,107 @@
+---
+title: "ASP.NET MVC vs ASP.NET Core: Practical Differences"
+description: >-
+  ASP.NET Core has been around for a while, but not everyone is using the new framework yet. If you're someone who's migrating from ASP.NET MVC to ASP.NET Core, you might be wondering what the differences between the…
+publishedAt: 2020-10-27
+draft: false
+tags:
+  - asp-net-core
+originalUrl: https://ojdevelops.blogspot.com/2020/10/aspnetmvc-vs-aspnet-core-practical-differences.html
+---
+ASP.NET Core has been around for a while, but not everyone is using the new framework yet. If you're someone who's migrating from ASP.NET MVC to ASP.NET Core, you might be wondering what the differences between the two frameworks are. In this post, I will share the main differences between the two, from the point of view of a developer who has worked with both.
+
+Here is an overview:
+
+1.  Dependency injection is built-in.
+2.  Controllers are unified.
+3.  Client-side assets are centralized.
+4.  And more - read below!
+
+## Dependency injection is built-in
+
+[Dependency injection](/blog/introduction-to-dependency-injection/) is a popular pattern in object-oriented languages that helps make code maintainable. With ASP.NET MVC, developers had to make use of 3rd-party NuGet packages to enable dependency injection in their projects.
+
+In ASP.NET Core, dependency injection is baked into the framework. There is no need to use any NuGet package, although using 3rd party DI packages is still supported.
+
+Dependency injection is supported not only for your own custom code, but also with the built-in classes used in ASP.NET Core.
+
+For example, take a look at the following code from `Startup.cs`, straight out of the template of a new ASP.NET Core API web application:
+
+```csharp
+
+public class Startup
+{
+ public Startup(IConfiguration configuration)
+ {
+ Configuration = configuration;
+ }
+
+ public IConfiguration Configuration { get; }
+
+ // This method gets called by the runtime. Use this method to add services to the container.
+ public void ConfigureServices(IServiceCollection services)
+ {
+ services.AddControllers();
+ }
+
+ // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+ {
+ if (env.IsDevelopment())
+ {
+ app.UseDeveloperExceptionPage();
+ }
+
+ app.UseHttpsRedirection();
+
+ app.UseRouting();
+
+ app.UseAuthorization();
+
+ app.UseEndpoints(endpoints =>
+ {
+ endpoints.MapControllers();
+ });
+ }
+}
+```
+
+You can see dependency injection at work by looking at the constructor, where a parameter of type `IConfiguration` is passed as a parameter. You can also see dependency injection at work on the `ConfigureServices` and `Configure` methods.
+
+## Controllers are unified
+
+In ASP.NET MVC, there were two types of controllers that you normally inherit from: `Controller` for controllers that return views, and `ApiController` for controllers that return data.
+
+It was possible to mix the two in the same project, but there is additional configuration involved. For example, the route configuration should be done carefully so that the route goes to the correct controller type. And if you wanted to use custom filters, it would have to be written twice, one for the normal controller, and one for the API controller.
+
+In ASP.NET Core, there is only one Controller base class that's used for returning anything, whether views or data. There is no `ApiController` anymore.
+
+The main benefit is that it allows reuse of codes that are common to methods that return views and data. One example are custom filters, and even built-in filters like the `[Authorize]` filter.
+
+Overall, the unification of controllers require less code plumbing and allow the developer to focus more on busienss logic concerns.
+
+## Client-side assets are centralized
+
+In the default folder structure of an ASP.NET MVC project, CSS and JavaScript files are located in the Content and Scripts folder. These folders are on the same level as other server folders like the Views folder and the Controllers folder.
+
+For a new ASP.NET Core project, all client side assets like CSS files, JavaScript files, favicon, images, and others are located in a folder called wwwroot.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/08b1bb67e460-aspnet-aspnetcore-topdifferences-wwwrooot-structure.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/08b1bb67e460-aspnet-aspnetcore-topdifferences-wwwrooot-structure.png)
+
+Since all the client-side assets are in one place, the code structure is easier to understand and maintain out-of-the-box.
+
+More importantly, it works well when using front-end technologies, including module bundlers such as webpack.
+
+On a related note, code for server-side bundling and minification is not included out-of-the-box on the default ASP.NET Core project. Any bundling and minification has to be added manually. One popular solution for front-end bundling and minification is webpack.
+
+## And more!
+
+Here are some more differences:
+
+-   **Global.asax is gone.** Instead, it has been replaced with `Program.cs` for setting up the web host and `Startup.cs` for setting up the services (see the sample code above).
+-   **web.config is gone.** Instead, configuration is controlled by `appsettings.json`.
+-   **It is cross platform.** .NET Core and ASP.NET Core runs on Windows, Mac, or Linux.
+
+## Conclusion
+
+ASP.NET Core is an exciting framework with many changes and improvements over ASP.NET MVC. Three practical differences between ASP.NET Core and ASP.NET MVC revolve around dependency injection, the controller programming model, and handling of static assets. These differences make the default code structure easier to work with and compatible with the current best practices in the web programming world.

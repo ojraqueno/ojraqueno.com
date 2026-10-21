@@ -1,0 +1,158 @@
+---
+title: Entity Framework Code First Migrations
+description: >-
+  So you've created your entities and had Entity Framework create your database for you. Now, you want to change your entities and of course also change the database schema. How do you go about doing that?
+publishedAt: 2014-09-27
+draft: false
+tags:
+  - net
+  - c-sharp
+  - entity-framework
+originalUrl: https://ojdevelops.blogspot.com/2014/09/entity-framework-code-based-migrations.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/0073789883dd-entity-framework-code-first-migratons.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/0073789883dd-entity-framework-code-first-migratons.jpg)
+
+So you've created your entities and had Entity Framework create your database for you. Now, you want to change your entities and of course also change the database schema. How do you go about doing that?
+
+## Can I Just Delete the Database?
+
+You can, and I've done this lots of times. You know that Entity Framework can create the database for you if there is no database yet. So when you change your entities, you can delete the existing database, and when you run your application again, you would get a new database with a schema that corresponds to the updated entities.
+
+While this works well during development, you can imagine that deleting and recreating the database is not very suitable for production!
+
+## Can I Update the Database Schema Manually?
+
+Entity Framework uses a set of rules that determine the appropriate database schema that corresponds with your entities. If you know these rules, you would be able to manually update the database to mimic what Entity Framework would have done.
+
+You can also imagine that this is not the best solution because just one mistake can cause errors. In addition, Entity Framework can already do this for you, so there's no need for you to do this manually.
+
+## Use Migrations
+
+Today we will be using migrations to update the database schema. Specifically, we will be using **Code First Migrations**.
+
+Here is a summary of the code first migration workflow:
+
+1.  You create your classes and let Entity Framework (EF) create the database for you.
+2.  You tell EF that you would like to use its Migrations feature.
+3.  EF records the initial state of your classes.
+4.  You update your classes. Changes warrant a database schema change.
+5.  You tell EF about the current state of your classes. EF records this new state.
+6.  You tell EF to update the database.
+7.  Database schema update complete!
+
+Let's see these steps in action.
+
+## 1\. You create your classes and let Entity Framework (EF) create the database for you.
+
+Let's create a console application, import the Entity Framework package, create an entity, create a context, and then insert an entity.
+
+Here is a sample User entity:
+
+```csharp
+
+public class User
+{
+ public int Id { get; set; }
+ public string Name{ get; set; }
+}
+```
+
+Here is the context:
+
+```csharp
+
+public class MyContext : DbContext
+{
+ public DbSet<User> Users { get; set; }
+}
+```
+
+Here is Program.cs:
+
+```csharp
+
+public class Program
+{
+ static void Main()
+ {
+ try
+ {
+ using (var db = new MyContext())
+ {
+ db.Users.Add(new User
+ {
+ Name = "Cowman"
+ });
+ db.SaveChanges();
+ }
+ }
+ catch (Exception ex)
+ {
+ Console.WriteLine(ex.Message);
+ } 
+ }
+}
+```
+
+Here is a snapshot of the Solution Explorer window which shows the classes:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4f3737fc4fd8-before-migrations-enabled.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4f3737fc4fd8-before-migrations-enabled.png)
+
+When you run the program, the database gets created and a User gets inserted, as expected.
+
+## 2\. You tell EF that you would like to use its Migrations feature.
+
+To do this, type **Enable-Migrations** into the Package Manager Console and press enter, like so:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/80ba78110a18-enable-migrations.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/80ba78110a18-enable-migrations.png)
+
+**Note:** The Default project should be the project where your context class is in.
+
+**Note 2:** If you have multiple contexts, you need to specify on which context you would like to enable Migrations, using the following command:
+
+```plaintext
+
+Enable-Migrations -ContextTypeName [FullyQualifiedNameOfYourContextClass]
+```
+
+## 3\. EF records the initial state of your classes.
+
+You may have noticed that after enabling migrations, a couple of new classes and a folder appeared in the project:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/717096fefcb6-migration-classes.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/717096fefcb6-migration-classes.png)
+
+You can ignore the Configuration class for now. What's interesting is the "InitialCreate" class - it serves as a snapshot of the state of your classes the first time Migrations was enabled.
+
+## 4\. You update your classes. Changes warrant a database schema change.
+
+Now add an Address field to the User entity:
+
+```csharp
+
+public class User
+{
+ public int Id { get; set; }
+ public string Name{ get; set; }
+ public string Address { get; set; }
+}
+```
+
+You will get an exception: "The model backing the 'MyContext' context has changed since the database was created. Consider using..." This is because there is a mismatch between the shape of your classes and the database schema. To move on, you need to do the next steps:
+
+## 5\. You tell EF about the current state of your classes. EF records this new state.
+
+You can do this by executing the **Add-Migration -Name \[MigrationName\]** command in the Package Manager Console. **\[MigrationName\]** is an identifying name of this migration (eg AddAddressToUser):
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b505423f58b4-migration-add-address.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b505423f58b4-migration-add-address.png)
+
+Notice that another class was added to the Migrations folder:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/128770246386-migration-classes-with-address.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/128770246386-migration-classes-with-address.png)
+
+## 6\. You tell EF to update the database.
+
+At this point, Entity Framework has information about the initial state of the system and the new, target state of the system. Entity Framework can use this information to update the database schema accordingly. You can trigger this update manually by using the **Update-Database** command, again in the Package Manager Console:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/59abe9e8f347-update-database.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/59abe9e8f347-update-database.png)
+
+Once the command finishes, the database schema would have been updated. Now, the shape of your classes and the database schema are in sync again, and you will no longer get any exceptions when you try to run the application.

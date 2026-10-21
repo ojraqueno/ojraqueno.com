@@ -1,0 +1,78 @@
+---
+title: Automapper Quickstart
+description: >-
+  Mapping code is ubiquitous in most web applications. The most common use case is when mapping DTO's to business entities or from business entities to view models. Manually writing mapping code, though necessary, is…
+publishedAt: 2013-10-08
+draft: false
+tags:
+  - net
+  - automapper
+  - c-sharp
+originalUrl: https://ojdevelops.blogspot.com/2013/10/automapper-quickstart.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6df96030571c-automapper-quickstart.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6df96030571c-automapper-quickstart.jpg)
+
+Mapping code is ubiquitous in most web applications. The most common use case is when mapping DTO's to business entities or from business entities to view models. Manually writing mapping code, though necessary, is tedious, time-consuming, error prone, and hard to maintain. Fortunately there are libraries such as AutoMapper that help us with the task.
+
+[AutoMapper](http://automapper.org/) is a free library that helps us write mapping code. You can add it to your solution via NuGet. You can also take a look at the code in [GitHub](https://github.com/AutoMapper/AutoMapper).
+
+It's pretty easy to get started with AutoMapper. Let's look at an example.
+
+## The Entity and the ViewModel
+
+Suppose you have the following business entity:
+
+```csharp
+
+public class User
+{
+ public int Id { get; set; }
+ public string Username { get; set; }
+ public string Email { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+
+ // I do not want to expose this
+ public virtual ICollection<MyObject> Objects { get; set; }
+
+ // methods
+}
+```
+
+You do not want to expose the `Objects` to the view, perhaps because it's not needed or you want to load it at a later time. So you create a new viewmodel like this:
+
+```csharp
+
+public class UserViewModel
+{
+ public int Id { get; set; }
+ public string Username { get; set; }
+ public string Email { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+}
+```
+
+Typically, you then write mapping code that converts a `User` into a `UserViewModel` and vice versa. This is where AutoMapper can help you.
+
+## Using AutoMapper
+
+The first step in using AutoMapper is to set up the mapping. This is only done once, typically when the application loads. Here is sample code that sets up the mapping between a `User` and a `UserViewModel`:
+
+```csharp
+
+Mapper.CreateMap<User, UserViewModel>();
+```
+
+To actually perform the mapping, you would write:
+
+```csharp
+
+User user = // get user from db
+
+UserViewModel viewModel = Mapper.Map<UserViewModel>(user);
+```
+
+And that's it! Pretty simple, eh?
+
+For more information on the features of AutoMapper, you can head on over to their [wiki](https://github.com/AutoMapper/AutoMapper/wiki).

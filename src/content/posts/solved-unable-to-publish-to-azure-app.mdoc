@@ -1,0 +1,31 @@
+---
+title: "Solved: Unable to publish to Azure App Service from Visual Studio"
+description: >-
+  I recently created an Azure App Service and tried to publish a new ASP.NET Core web app using its publish profile downloaded. When i did that, I encountered an error:
+publishedAt: 2020-03-02
+draft: false
+tags:
+  - app-service
+  - azure
+  - visual-studio
+originalUrl: https://ojdevelops.blogspot.com/2020/03/solved-unable-to-publish-to-azure-app.html
+---
+I recently created an Azure App Service and tried to publish a new ASP.NET Core web app using its publish profile downloaded. When i did that, I encountered an error:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/a36356f183a8-visual-studio-error.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/a36356f183a8-visual-studio-error.png)
+
+Web deployment task failed. (Could not connect to the remote computer ("\[redacted\].scm.azurewebsites.net"). On the remote computer, make sure that Web Deploy is installed and that the required process ("Web Management Service") is started. Lear more at: http://go.microsoft.com/fwlink/?LinkId=221672#ERROR\_DESTINATION\_NOT\_REACHABLE.)
+The requested resource does not exist, or the request URL is incorrect.
+Error details:
+Could not connect to the remote computer ("\[redacted\].scm.azurewebsites.net"). On the remote computer, make sure that Web Deploy is installed and that the required process ("Web Management Service") is started. Lear more at: http://go.microsoft.com/fwlink/?LinkId=221672#ERROR\_DESTINATION\_NOT\_REACHABLE.
+The remote server returned an error: (404) Not Found.
+
+Here's how to solve that error:
+
+1.  Go to the app service on the Azure portal.
+2.  Go to configuration.
+3.  Add an app setting with name `WEBSITE_WEBDEPLOY_USE_SCM` and value `false`.
+4.  Save changes.
+5.  Download a new publish profile.
+
+You should be able to do publish from Visual Studio now.

@@ -1,0 +1,92 @@
+---
+title: Create Meaningful Classes
+description: >-
+  In a previous post I talked about the importance of good naming when writing code. The title of that post is "Don't Make Me Think... About Your Code". This post will talk about meaningful classes and can be…
+publishedAt: 2015-11-08
+draft: false
+tags:
+  - c-sharp
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2015/11/create-meaningful-classes.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/515669deed29-create-meaningful-classes.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/515669deed29-create-meaningful-classes.jpg)
+
+In [a previous post](/blog/dont-make-me-think-about-your-code/) I talked about the importance of good naming when writing code. The title of that post is "Don't Make Me Think... About Your Code". This post will talk about meaningful classes and can be considered as an addition to the "writing code" series.
+
+## The Setup
+
+In an ASP.NET MVC project, suppose there is a controller method that accepts and handles a `FormCollection` class like this:
+
+```csharp
+
+public ActionResult MyMethod(FormCollection formCollection)
+{
+ string name = formCollection["Name"];
+ string email = formCollection["Email"];
+ string message = formCollection["Message"];
+
+ // do something with name, email, message.
+}
+```
+
+In an ideal situation, a strongly-typed model should be used so that the framework can handle the model binding.
+
+Say that it's not possible to use a strongly-typed model. How can we make the code above better?
+
+In the code above we can see that individual form items are being assigned to variables, which are then used later in the code. This parsing of the form also happens in the controller action.
+
+## A Possible Improvement
+
+The main improvement that could be done is to **create a different class** to encapsulate the variables and to **move the parsing to that class**. Something like this:
+
+```csharp
+
+public class MyContactForm
+{
+ private MyContactForm() { }
+
+ public string Email { get; private set; }
+ public string Message { get; private set; }
+ public string Name { get; private set; }
+
+ public static MyContactForm Create(FormCollection formCollection)
+ {
+ if (formCollection == null) throw new ArgumentNullException("formCollection");
+
+ return new MyContactForm
+ {
+ Email = formCollection["Email"],
+ Message = formCollection["Message"],
+ Name = formCollection["Name"]
+ };
+ }
+}
+```
+
+And the usage:
+
+```csharp
+
+public ActionResult MyMethod(FormCollection formCollection)
+{
+ var myContactForm = MyContactForm.Create(formCollection);
+
+ // do something with myContactForm
+}
+```
+
+## Advantages
+
+Here are the advantages of this approach:
+
+1.  **Better assignment of responsibility.** The task of parsing the `FormCollection` is taken away from the controller and into a more appropriate place. This makes the code more cohesive and better adhere to the Single Responsibility Principle.
+2.  **Encapsulation with meaningful naming.** The variables are grouped together into one class, hinting that the three variables are intended to be used together. The class is also given an appropriate name to reduce the cognitive load of any code reader.
+3.  **Better testing story.** Testing the parsing function in isolation is now easier because the class is independent of the controller.
+
+There are other benefits as well, such as the potential of reusability. However, the benefits listed above are enough to justify the effort of creating a new class. That is to say, even if the new class is never actually re-used, it should still get created.
+
+## Conclusion
+
+In this post we looked at creating a meaningful class that provides a better encapsulation / responsibility / naming experience. This kind of effort should be done even in the absence of the potential for reuse.
+
+If you like this post you may be interested in my previous post about [Centralizing Session Access.](/blog/centralizing-session-access/)

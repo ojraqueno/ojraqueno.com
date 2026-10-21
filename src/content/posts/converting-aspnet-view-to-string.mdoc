@@ -1,0 +1,58 @@
+---
+title: Converting an ASP.NET View to a String
+description: >-
+  Sometimes you would like to get the contents of a view and store it in a string rather than render it as HTML. An example of this is if you want to compose HTML emails and you want to harness the power of the ASP.NET…
+publishedAt: 2015-03-15
+draft: false
+tags:
+  - net
+  - c-sharp
+  - email
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2015/03/converting-aspnet-view-to-string.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4b37063e5499-converting-an-asp.net-view-to-a-string.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4b37063e5499-converting-an-asp.net-view-to-a-string.jpg)
+
+Sometimes you would like to get the contents of a view and store it in a string rather than render it as HTML. An example of this is if you want to compose HTML emails and you want to harness the power of the ASP.NET MVC infrastructure (which includes layouts, partial views, and models). In this post I will show you how to store rendered View content in a string.
+
+Here is the code snippet that can be used to render a view to a string:
+
+```csharp
+
+public ActionResult Foo()
+{
+ Controller controller = this;
+ string masterName = "~/Views/Shared/_Layout.cshtml";
+ string viewName = "~/Views/Home/Email.cshtml";
+ object model = new { Foo = "Foo", Bar = "Bar" };
+
+ string viewContentAsString = null;
+ using (StringWriter sw = new StringWriter())
+ {
+ controller.ViewData.Model = model;
+ ViewEngineResult viewResult = ViewEngines.Engines.FindView(controller.ControllerContext, viewName, masterName);
+ ViewContext viewContext = new ViewContext(controller.ControllerContext, viewResult.View, controller.ViewData, controller.TempData, sw);
+ viewResult.View.Render(viewContext, sw);
+
+ viewContentAsString = sw.ToString();
+ }
+
+ // process viewContent
+ // ...
+}
+```
+
+The important variables are `controller`, `masterName`, `viewName`, and `model`.
+
+-   **`controller`** - the controller instance. This is needed to get a valid instance of `ControllerContext` among other things.
+-   **`masterName`** - the virtual path to the layout page. `Null` if no layout page should be used.
+-   **`viewName`** - the virtual path to the view.
+-   **`model`** - the model used by the view. Can be an anonymous type or a declared type.
+
+If the view code makes use of partial views, the partial views will be rendered as well. This can be useful if for example you are composing HTML emails and there is a common header and footer for all of them which are stored in partial views.
+
+If there is a controller/action that corresponds to the email view, you will be able to see what the email would like by going to the appropriate route.
+
+## Conclusion
+
+In this post I showed you how to render an ASP.NET MVC view as a string. This can be especially useful when composing HTML emails. Storing HTML email content in views gives you the ability to 1) preview the result (including model binding) and 2) declare common parts (by using layouts and partial views).

@@ -1,0 +1,142 @@
+---
+title: "Azure Quickstart: Web Hosting with App Services"
+description: >-
+  There was a time when hosting a web application and the backing infrastructure was a long and rather expensive process. But with the advent of the cloud, this process has become much, much easier. This post is about…
+publishedAt: 2018-05-28
+draft: false
+tags:
+  - app-service
+  - azure
+originalUrl: https://ojdevelops.blogspot.com/2018/05/azure-quickstart-web-hosting-with-app.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/8c43acc54ff9-azure-quickstart-web-hosting-with-app-services.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/8c43acc54ff9-azure-quickstart-web-hosting-with-app-services.jpg)
+
+There was a time when hosting a web application and the backing infrastructure was a long and rather expensive process. But with the advent of the cloud, this process has become much, much easier. This post is about setting up a web application in Azure. Within minutes, you can get your own web app up in Azure. Let's get started!
+
+## Creating an Azure Account
+
+The first step is to create an account on Azure. To do that, you need the following:
+
+-   A Microsoft account
+-   A mobile phone (for identity verification)
+-   A credit card (for identity verification)
+
+The credit card details are needed only for identity verification purposes. It will not get charged unless you explicitly tell Azure to.
+
+Here is the registration link: [https://azure.microsoft.com/en-us/free/](https://azure.microsoft.com/en-us/free/)
+
+Congratulations, you now have an Azure account!
+
+## Accessing the Azure Portal
+
+The Azure portal is the starting page in Azure. From it, you can create web apps, create other resources (there are a lot to choose from), view your bill, etc.
+
+After going through the registration process, you can log on to Azure via the following link: [https://portal.azure.com](https://portal.azure.com)
+
+The portal will look something like this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7441e0ee6b3b-azure-portal.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7441e0ee6b3b-azure-portal.png)
+
+There are a lot of areas to explore! But for now, let's focus on getting a web app up and running.
+
+## Creating a Web App
+
+To create a web app, follow these steps:
+
+1\. On the search bar on the top, type "Web App", then click on the "Web App" search result.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/365af1512d27-search-web-app.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/365af1512d27-search-web-app.png)
+
+Alternatively, you can create a web app by clicking on the App Services on the hub on the left, then clicking on the Add button, then clicking on Web App on the various templates that come up.
+
+2\. You will get taken to the Create Web App blade, which looks like this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/59f4488d06ab-create-web-app-blade.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/59f4488d06ab-create-web-app-blade.png)
+
+3\. Fill in all of the required fields.
+
+-   **App name**: This is the identifier for your web app and will also serve as the domain of your website @azurewebsites.net.
+-   **Subscription**: This is the name of the subscription where this web app will become part of (there can be many subscriptions in a single Azure account). The subscription "Free Trial" should already be preselected; that is what we want.
+-   **Resource Group**: Resource groups are containers that can be used to group resources that are used together. For example, we can put a Web App resource and an SQL Azure resource into a single container. Choose "Create new" and give it a name.
+-   **OS**: Choose Windows as the OS.
+-   **App Service plan/Location**: An app service plan determines, among other things, the cost of the web app. There is already a pre-selected new App Service plan. You can optionally change this by clicking on the App Service plan/Location section and clicking on Create new. For new website, I suggest creating a new app service plan with the "F1 Shared infrastructure" pricing tier, which is free.
+
+The blade should now look similar to this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/08a202e717ca-create-web-app-blade-filled-up.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/08a202e717ca-create-web-app-blade-filled-up.png)
+
+4\. Click Create. Azure will now provision the web app. You will be able to see the progress by clicking on the bell icon beside the top search bar:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7421cfaa222c-deployment-in-progress.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7421cfaa222c-deployment-in-progress.png)
+
+After a few moments, the notification message will change from "Deployment in progress" to "Deployment succeeded".
+
+Congratulations, your web app has now been provisioned!
+
+## Browsing to the Resource
+
+You can go to the newly created Web App by clicking on the "Go to Resource" button on the notification. Alternatively, you can click "All resources" on the left sidebar and choose the App Service (not the App Service plan) from the list.
+
+The blade for the app should look like this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2990eb2981b9-app-service-blade.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2990eb2981b9-app-service-blade.png)
+
+Lots of items here, but for now, let's browse to the website by clicking on the Browse button, on the top button toolbar.
+
+The site should look like this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1010a29b554d-browse-web-app.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1010a29b554d-browse-web-app.png)
+
+As you can see, the web app is now up and running! Take a few moments to reflect on how easy it is for us to get to this point. You'll appreciate the portal's power even more if you have previous experience setting up a website in a traditional manner.
+
+We have "reserved our space" in the cloud. Let's now see how we can publish our own content via Visual Studio.
+
+## Creating a New Web Application in Visual Studio
+
+We're going to use the default web application template in Visual Studio to create a new web app. I am using Visual Studio 2017 in this demo.
+
+Here are the steps:
+
+1.  Go to File > New > Project.
+2.  Choose "ASP.NET Core Web Application", choose a name, and click OK.
+3.  Choose API from the templates and click OK.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/84de63e9a16e-new-asp-net-core-web-application.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/84de63e9a16e-new-asp-net-core-web-application.png)
+
+To confirm that the solution is working, run it without debugging and browse to the `api/values` endpoint via a browser. The response should be a array that contains a couple of string values.
+
+There's not much in our application yet, but let's go ahead and publish it to Azure.
+
+## Publishing a Web App from Visual Studio
+
+To publish the app, follow these steps:
+
+1\. Right click on the web project and click on Publish. The "Pick a publish target" modal will appear.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1a12d6e9f8db-pick-a-publish-target.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1a12d6e9f8db-pick-a-publish-target.png)
+
+2\. We already created an App Service, so choose "Select Existing" and click Publish. The "App Service" modal will appear.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f4afbf258318-app-service-modal.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f4afbf258318-app-service-modal.png)
+
+3\. If you aren't already signed in to Visual Studio using the same Microsoft account you used to create your Azure account, do so by clicking on the Microsoft account button on the top-right of the modal.
+
+4\. Choose the "Free Trial" subscription and select the web app resource that you created earlier. Click OK.
+
+5\. The modal will close and you will get taken back to the main Publish window. It will then automatically start the publish process. You can monitor the progress on the Output tab in Visual Studio.
+
+When the publishing finishes, Visual Studio will automatically open the site using your default browser. Again, go to the `api/values` endpoint, and see that the site is working as intended.
+
+## Updating the Published Site
+
+What if there are any code changes, and we need to update the published site? Do we have to go through the entire publish process again?
+
+Fortunately, the answer is no. Visual Studio will remember all of the publish settings you used originally.
+
+When you need to publish again, just right click on the web project, click Publish, and click on the Publish window on the Publish window that appears.
+
+## Conclusion
+
+Cloud offerings such as Azure make creating web apps really easy. All it takes is a few clicks to get a web app up and running.
+
+Azure Visual Studio integration is super cool also. It lets us publish web apps directly from Visual Studio using just a few clicks as well.

@@ -1,0 +1,53 @@
+---
+title: Using Fiddler to Examine Web Traffic
+description: >-
+  When building typical web applications using ASP.NET WebForms and ASP.NET MVC, the usual way of testing and debugging is to see whether the page loaded correctly (ie whether it displays the correct data or not).…
+publishedAt: 2014-04-10
+draft: false
+tags:
+  - fiddler
+originalUrl: https://ojdevelops.blogspot.com/2014/04/using-fiddler-to-examine-web-traffic.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/63526b35aae7-using-fiddler-to-examine-web-traffic.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/63526b35aae7-using-fiddler-to-examine-web-traffic.jpg)
+
+When building typical web applications using ASP.NET WebForms and ASP.NET MVC, the usual way of testing and debugging is to see whether the page loaded correctly (ie whether it displays the correct data or not). However, when building ajax applications / single page applications, you want to test not only the appearance of the page but more importantly the results of API calls. Since these results may not be obvious by just looking at the page, we need a different method of testing.
+
+## Use Cases
+
+Here are some reasons why looking at a page might not be the best way to test or debug an ajax / single page application:
+
+1.  **The appearance of the page doesn't necessarily reflect the result of the API call.** For this reflection to happen, you would need to write additional code, which might introduce errors.
+2.  **You need to know the result of the API call regardless of how the results are displayed on the page.** This is useful when a different team is working on the site design and a different team is working on the server API.
+3.  **API results may not render correctly when viewed in browsers.** It is true that browsers are able to display JSON or XML. However, some browsers only offer this in a limited fashion (ie they don't provide formatting functions such as collapsible tree views). In addition, the results may not render in the first place because the accept headers might not match the response format (eg: request accepting HTML and response returning JSON).
+
+## Fiddler to the Rescue
+
+[Fiddler](http://www.telerik.com/fiddler) is a free, lightweight, downloadable tool that has many functions, including monitoring HTTP/HTTPS traffic. I have found it very useful when testing API calls, but it also captures page requests.
+
+## Inspecting a Page
+
+Let's start by going to a website. Open Fiddler and then, in a browser, go to [http://www.facebook.com](http://www.facebook.com). Fiddler records the HTTP request-response pair. Here's what Fiddler looked like on my machine (click to enlarge):
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/036660f949bc-inspect-page.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/a5d85da01ceb-inspect-page.png)
+
+I have selected the request to facebook in the left pane (1) and opened the Inspectors tab in the right pane (2). Still on the right pane, I clicked the Raw button for the request (3) and the Raw button for the response (4). So in the request pane we can see the actual HTTP request that my browser made - action, url, headers, body (though there isn't one for this particular request), cookies, and all data appropriate for a request. Conversely, we see the HTTP response in the response pane.
+
+## Inspecting an API Call
+
+Now let's inspect an API call. For this demo I used an API exposed by [OpenWeatherMap](http://openweathermap.org/). I made a call to [http://api.openweathermap.org/data/2.5/weather?q=London,uk](http://api.openweathermap.org/data/2.5/weather?q=London,uk), which returns weather information about London in JSON format. I went to that URL through a browser, and here is what Fiddler looks like:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/d89e5be06384-inspect-json.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/88d6df0da71d-inspect-json.png)
+
+In the response pane, I selected JSON instead of Raw. As you can see, Fiddler displays the content in a nice, formatted way. It will be unformatted when viewed through a browser (at least in the current version of Google Chrome).
+
+## The Composer
+
+You can also make HTTP requests without the use of a browser by using the Composer tab:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/0fd52ee3693a-composer.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/12ebc2256dcf-composer.png)
+
+Head over to the Composer tab (1), enter the URL in the field provided (2) and click Execute (3). As with any request, this one will appear in Fiddler's left pane. Selecting it and opening the Inspector will let you see the actual HTTP request and response pair.
+
+## More Features
+
+Recording HTTP / HTTPS traffic is very powerful already, but it's not the only thing Fiddler can do. You can also do web session manipulation, security testing, and much more. Check out Fiddler's [Key Features](http://www.telerik.com/fiddler#KeyFeatures) for more information.

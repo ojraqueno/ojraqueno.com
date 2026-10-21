@@ -1,0 +1,165 @@
+---
+title: Auditing Changes with Entity Framework
+description: >-
+  Today we will see how we can keep an audit record of entity changes using Entity Framework. This is a very useful feature that can also be a business requirement when dealing with important or sensitive information.
+publishedAt: 2016-06-06
+draft: false
+tags:
+  - c-sharp
+  - entity-framework
+githubRepo: https://github.com/ojraqueno/ojdevelops
+originalUrl: https://ojdevelops.blogspot.com/2016/06/auditing-changes-with-entity-framework.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/57001340a1b0-auditing-changes-with-entity-framework.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/57001340a1b0-auditing-changes-with-entity-framework.jpg)
+
+Today we will see how we can keep an audit record of entity changes using Entity Framework. This is a very useful feature that can also be a business requirement when dealing with important or sensitive information.
+
+GET THE CODE (EF Core)
+
+Source code using Entity Framework Core is available at: [https://github.com/ojraqueno/ojdevelops/tree/master/auditing-changes-with-entity-framework](https://github.com/ojraqueno/ojdevelops/tree/master/auditing-changes-with-entity-framework)
+
+## tracker-enabled-dbcontext
+
+To help us with our goal, we will be using the **tracker-enabled-dbcontext** library. This library makes it very easy to add auditing capabilities to our database.
+
+The first step is to install the **TrackerEnabledDbContext** NuGet package through the NuGet Package Manager or through the Package Manager Console:
+
+```plaintext
+
+Install-Package TrackerEnabledDbContext
+```
+
+We will also be using a simple entity called `Person` in this demonstration:
+
+```csharp
+
+public class Person
+{
+ public int Id { get; set; }
+ public string FullName { get; set; } 
+ public DateTime DateOfBirth { get; set; }
+}
+```
+
+## Configuration
+
+Our context class needs to inherit from `TrackerContext` instead of the normal `DbContext`:
+
+```csharp
+
+public class ApplicationDbContext : TrackerContext
+{
+ public DbSet<Person> People { get; set; }
+}
+```
+
+When the database is created, you will see two tables called **AuditLogs** and **AuditLogDetails**:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1076ac66f0a3-tables-screenshot.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/1076ac66f0a3-tables-screenshot.png)
+
+These tables are provided by the tracker context. Each row in the `AuditLogs` table corresponds to an insert, update, or delete operation. Each row in the `AuditLog` table will also be associated with one or more rows in the `AuditLogDetails` table. Each row in the `AuditLogDetails` table corresponds to one entity property that was inserted / updated / deleted.
+
+We also need to set an additional configuration depending on how we update entities. If we update entities by using the `Attach` method and setting the `EntityState` to `Modified`, we should set the following on application startup (eg. in Global.asax):
+
+```csharp
+
+GlobalTrackingConfig.DisconnectedContext = true;
+```
+
+There is no need to call this code if the approach we take in updating is to retrieve the entity first then update the modified properties manually.
+
+Finally, we need to mark which entity types should be tracked. This can be done through data annotations:
+
+```csharp
+
+[TrackChanges]
+public class Person
+{
+ // properties here
+}
+```
+
+Or through fluent configuration, to be run on application startup:
+
+```csharp
+
+EntityTracker.TrackAllProperties<Person>();
+```
+
+## Trying It Out: Inserting, Updating, and Deleting Data
+
+So now we are ready to test! First, let's insert a single `Person` entity:
+
+```csharp
+
+using (var db = new ApplicationDbContext())
+{
+ var johnDoe = new Person
+ {
+ FullName = "John Doe",
+ DateOfBirth = new DateTime(2000, 1, 1)
+ };
+
+ db.People.Add(johnDoe);
+ db.SaveChanges();
+}
+```
+
+Running the program will insert a record into the the `People` table. But you will see that the `AudigLogs` and `AuditLogDetails` tables are also populated:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f4e605e89fa0-insert-audits.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f4e605e89fa0-insert-audits.png)
+
+One entry has been added to the `AuditLogs` table, corresponding to the fact that we inserted a single entity. On the other hand, the `AuditLogDetails` table contains three entries, with each entry corresponding to an entity property.
+
+Now let's try updating:
+
+```csharp
+
+using (var db = new ApplicationDbContext())
+{
+ var johnDoe = new Person
+ {
+ Id = 1,
+ FullName = "John Doe's New Name",
+ DateOfBirth = new DateTime(2000, 1, 1)
+ };
+
+ db.People.Attach(johnDoe);
+ db.Entry(johnDoe).State = EntityState.Modified;
+
+ db.SaveChanges();
+}
+```
+
+Notice that we are only updating the `FullName`; the `DateOfBirth` remains unchanged. Let's see how that looks like in the database:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4be86edb88a0-update-audits.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4be86edb88a0-update-audits.png)
+
+As expected, the value of the `FullName` field was changed. Also expected is the addition of one entry into the `AuditLogs` table, corresponding to the single Update operation.
+
+But in the `AuditLogDetails` table, only one row was added instead of three. The reason for this is that only the properties that changed are recorded. In our update operation, only the `FullName` property was changed.
+
+Finally, let's try deleting:
+
+```csharp
+
+using (var db = new ApplicationDbContext())
+{
+ var johnDoe = new Person { Id = 1 };
+
+ db.People.Attach(johnDoe);
+ db.Entry(johnDoe).State = EntityState.Deleted;
+
+ db.SaveChanges();
+}
+```
+
+Here's how that looks like in the database:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e440af22cadc-delete-audits.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e440af22cadc-delete-audits.png)
+
+So now we see that the single person entry is gone and that there is an additional entry in the `AuditLogs` table corresponding to the single delete operation. But in the `AuditLogDetails` table, three new entries have been added: it recorded all the property changes to `NULL` of the deleted person entity.
+
+## Conclusion
+
+In this post we talked about how to track insert, update, and delete changes with Entity Framework using the **tracker-enabled-dbcontext** library. For more information about the library, visit its [github page](https://github.com/bilal-fazlani/tracker-enabled-dbcontext) and [wiki](https://github.com/bilal-fazlani/tracker-enabled-dbcontext/wiki).

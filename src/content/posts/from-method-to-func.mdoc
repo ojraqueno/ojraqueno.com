@@ -1,0 +1,154 @@
+---
+title: From Method to Func
+description: >-
+  In this post we will take a journey from ordinary methods to the Func. Along the way, we will encounter delegates , anonymous methods and lambda expressions . If any of these concepts are unfamiliar to you, don't…
+publishedAt: 2013-07-13
+draft: false
+tags:
+  - net
+  - c-sharp
+originalUrl: https://ojdevelops.blogspot.com/2013/07/from-method-to-func.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4ff13e8344ca-from-method-to-func.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/4ff13e8344ca-from-method-to-func.jpg)
+
+In this post we will take a journey from ordinary methods to the Func. Along the way, we will encounter **delegates**, **anonymous methods** and **lambda expressions**. If any of these concepts are unfamiliar to you, don't worry as they will be explained along the way.
+
+## A Simple Way to Think About It
+
+We all learned to assign values to variables early in our programming career. We would assign strings, integers, booleans, and even classes to some variable, which we can then use at a later time.
+
+When it comes to functions, we were taught that a function is programming construct that *does* something. And that's true: we use functions to validate input, to perform some business logic, to communicate with the database, etc.
+
+But have you ever thought about this question: *Can we store functions in variables? And if so, how?*
+
+For those versed in Javascript, they already know that functions can be stored in variables. However, doing this was not intuitive in .NET, specially in the earlier versions of the framework. Fortunately for us, this has been vastly improved. The first step in the journey is the **delegate**.
+
+## Delegates
+
+Our first goal is to be able to store a function in a variable. We can do so using something called a **delegate**. You can think of a delegate as a variable that stores methods. Below are some examples of how to declare delegates:
+
+```csharp
+
+delegate void VoidFunction(); // You can assign a method does not take any arguments and does not return anything
+delegate int MyFunction(int a, int b); // You can assign a method that takes two ints and returns an int
+```
+
+The signature of the delegate should match the signature of the method that you are assigning to it. For example, look at the following method:
+
+```csharp
+
+void Foo()
+{
+ Console.WriteLine("I do not take any arguments and do not return anything");
+}
+```
+
+If we tried to assign that function to the delegates we declared above, the result would be:
+
+VoidFunction v = new VoidFunction(Foo); // Successful: can assign method "Foo" to the "VoidFunction" delegate because the signatures match
+MyFunction m = new MyFunction(Foo); // Error: cannot assign method "Foo" to the "MyFunction" delegate because the signatures don't match
+
+Finally, in order to run the delegate (that is, to run the method assigned to it), we do:
+
+```csharp
+
+v();
+```
+
+The syntax of declaring a delegate and assigning a method to one might be hard to understand, so just remember that a delegate acts as a variable for a method. The most important thing to remember is that the signature of the delegate should match the signature of the method you want to assign to it.
+
+The next step in our journey is **anonymous methods**.
+
+## Anonymous Methods
+
+In our discussion on delegates above, there were two steps involved to assign a function to a delegate: 1) declare the method and 2) assign it to the delegate. This was a lot of work which was solved by **anonymous methods**. The most effective way to think about anonymous methods is that it is shorthand for declaring a method and assigning it to a delegate in one step.
+
+Following our delegate examples above, we can assign to the VoidFunction and MyFunction delegates using the following anonymous method syntax:
+
+```csharp
+
+VoidFunction v = delegate()
+{
+ Console.WriteLine("I do not take any arguments and do not return anything");
+};
+
+MyFunction m = delegate(int a, int b)
+{
+ Console.WriteLine("I take two int arguments and return an int");
+ return 0;
+};
+```
+
+Notice that in order to assign a method to the VoidFunction delegate, we did not need to declare a method with a matching signature anymore. Instead, the method implementation was defined and assigned to the delegate at the same time. We also did the same for the MyFunction delegate. As with normal delegates, the signature of the anonymous method must match the signature of the delegate.
+
+If you think it can't get easier than that, think again. The next step in our journey are the **Func and Action delegates**.
+
+## Func and Action Delegates
+
+The Func and Action delegates ship with the .NET framework beginning 3.5 and are generic delegates. Being generic, you can assign signatures of different types to them. The difference between the Action and Func delegates is the return type: use Action for methods that return void, while Func for methods that return something.
+
+Let's see the **Action** delegate in action (sorry I just had to) combined with anonymous methods:
+
+```csharp
+
+Action<string> myAction = delegate(string s)
+{
+ Console.WriteLine("I take a string and return nothing");
+};
+
+Action<int, string> anotherAction = delegate(int i, string s)
+{
+ Console.WriteLine("I take an int and a string (in that order) and return nothing");
+};
+```
+
+Since we are using the built-in Action delegate, there was no need for us to declare our own delegates (like what we did above). The type parameters of the Action delegate (the ones inside the <>) match the signature of the method you are assigning to it. The .NET framework has built-in Action delegates for methods that take zero to sixteen parameters.
+
+We use the **Func** delegate to contain methods that return something. For example:
+
+```csharp
+
+Func<int> myFunc = delegate()
+{
+ Console.WriteLine("I take nothing and return an int");
+ return 0;
+};
+
+Func<int, double, string> anotherFunc = delegate(int i, double d)
+{
+ Console.WriteLine("I take an int and a double (in that order) and return a string");
+ return String.Empty;
+};
+```
+
+If you would notice, the type of the last generic argument is the return type of the method. The types that come before the last one are the types of the method parameters.
+
+In the myFunc delegate, the last generic argument is int and there are no arguments before it, so that means the return type is int while there are no input arguments. In the anotherFunc delegate, the last generic argument is string and the arguments before it are int and double, so that means the return type is string and the types of the input arguments are int and double.
+
+The last step in our journey, and probably the coolest, are **lambda expressions**.
+
+## Lambda Expressions
+
+While anonymous methods are shorthand for declaring normal methods, **lambda expressions** are shorthand for writing anonymous methods.
+
+Here is how we may write our previous Action<string> using a lambda expression:
+
+```csharp
+
+Action<string> myActionUsingLambda = (string s) => { Console.WriteLine("I take a string and return nothing"); };
+```
+
+The right hand side of the equation can be split into two parts: the part before the "arrow" (=>) and the part after it. As you may have inferred, the part before the arrow represents the input parameter. The part after the arrow is the method body. As you can see, using lambda expressions reduced the line count from four to one.
+
+But wait, there's more! We can further shorten the lambda expression by removing the unnecessary or implicitly inferred text. The first one is the type of parameter (string). Since this is already given by the Action declaration, we can safely remove it. Next and related to that, we can remove the parenthesis around the input parameter. Finally, since the method body consists of only one statement, we can remove the curly braces around the method body and the accompanying semi-colon.
+
+The Action can then be rewritten very succinctly as:
+
+```csharp
+
+Action<string> myActionUsingLambda = s => Console.WriteLine("I take a string and return nothing");
+```
+
+Lambda expressions are usually encountered in this "skinned" form.
+
+In this post I talked about delegates, anonymous methods, and lambda expressions. I hope you have learned a lot and have gained a new appreciation and understanding for these extremely helpful language constructs.

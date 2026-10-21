@@ -1,0 +1,57 @@
+---
+title: Using Bower in Visual Studio
+description: >-
+  Today we are going to look at a very useful tool for managing client side CSS and JavaScript libraries - Bower.
+publishedAt: 2016-05-05
+draft: false
+tags:
+  - bower
+  - visual-studio
+originalUrl: https://ojdevelops.blogspot.com/2016/05/using-bower-in-visual-studio.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/245c2c88d5d2-using-bower-in-visual-studio.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/dc8012732812-using-bower-in-visual-studio.png)
+
+Today we are going to look at a very useful tool for managing client side CSS and JavaScript libraries - Bower.
+
+## What is Bower?
+
+Bower is a simple client-side package management tool. Its function is similar to NuGet, but it only deals with CSS / JavaScript frameworks. What I like about it is that it's super easy to setup and use.
+
+## Why Use Bower (vs NuGet)
+
+NuGet is *the* package source for .NET libraries, and also contains some CSS / JavaScript libraries, too. However, since client-side libraries are platform-agnostic, it makes sense to use a package manager that works across all platforms as well.
+
+In my experience, the NuGet packages for some CSS and JavaScript libraries are not always updated and may not be there at all. To get the most available client-side packages, I would recommend using Bower (or another client-side package manager) as the primary source over NuGet.
+
+With that out of the way, let's jump right in!
+
+## Including Bower in a Web Project
+
+To use bower, just right click on your ASP.NET MVC web project, go to Add > New Item, and choose Bower Configuration File. This action will add two files to the project: **.bowerc** and **bower.json**.
+
+The **.bowerc** contains configuration information for bower. By default, it only sets one setting, which is the directory where packages should be installed. Feel free to change this folder to something that you like.
+
+The file where we'll typically spend most of our time modifying is **bower.json**. It is this file where we will list which CSS / JavaScript packages we want to include in our project.
+
+## Working with the bower.json File
+
+In the bower.json file, there is an item called `dependencies`, which are key-value pairs of package names and versions. For example, below is a complete bower.json file with the jquery package version 2.2.3 listed as a dependency:
+
+```javascript
+
+{
+ "name": "ASP.NET",
+ "private": true,
+ "dependencies": {
+ "jquery": "2.2.3"
+ }
+}
+```
+
+After we type in the dependency and the version, and as soon as we hit Save, the package gets downloaded from the internet and added to whatever folder we put in the .bowerc file. And that's it - from there, we should be able to easily reference the needed files for use in our projects. (If for some reason the package does not get downloaded, we can right click on the bower.json file and choose Restore Packages.)
+
+**But there is one caveat!** Whatever folder we put in the .bowerc file will not be included in the project by default, so to view the folder, we have to click Show All Files in the Solution Explorer window. In addition, the packages that get downloaded will not be automatically added to the solution and will not be shown in the Solution Explorer window either. After downloading a package, we would need to click the Refresh button (also in the Solution Explorer window) in order to see it.
+
+## Conclusion
+
+In this short post we talked about the bower client-side package management tool. It is very simple and easy to use, yet it can save us a lot of time when working with client-side CSS and JavaScript packages.

@@ -24,7 +24,14 @@ Optional later: `updatedAt` if you revise the content substantially after migrat
 2. Download the XML export
 3. Convert posts to Markdoc (`.mdoc`) under `src/content/posts/`
 
-You can convert manually in Keystatic (`npm run dev` → http://127.0.0.1:4321/keystatic), or use a one-off script once the export is in hand.
+Most of the remaining public Blogger archive (96 posts, through Nov 2020) was imported with:
+
+```bash
+npm install turndown --no-save
+node scripts/migrate-blogger.mjs
+```
+
+That keeps original `publishedAt` dates, sets `originalUrl`, and skips posts already in `src/content/posts/`. Posts from 2022–2023 that only lived on the old `ojdevelops.com` custom domain are not in the Blogger feed.
 
 ## Priority order
 

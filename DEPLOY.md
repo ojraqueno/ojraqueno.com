@@ -37,3 +37,24 @@ npx wrangler deploy
 ```
 
 (Requires `wrangler login` once.)
+
+## Blog images (Cloudflare R2)
+
+Post images live in the `ojraqueno-images` R2 bucket (free tier: 10 GB). Staging copies are local-only in `.r2-staging/` (gitignored).
+
+```bash
+npx wrangler login
+npx wrangler r2 bucket create ojraqueno-images
+npx wrangler r2 bucket dev-url enable ojraqueno-images
+node scripts/migrate-images-to-r2.mjs download
+node scripts/migrate-images-to-r2.mjs upload
+```
+
+The current public `r2.dev` URL:
+
+```bash
+$env:R2_PUBLIC_BASE_URL = "https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev"
+node scripts/migrate-images-to-r2.mjs rewrite
+```
+
+After `ojraqueno.com` is on Cloudflare DNS, attach a custom domain such as `images.ojraqueno.com` on the bucket (R2 → Settings → Custom Domains) and rewrite again with that base URL. `r2.dev` is fine until then; Cloudflare rate-limits it for production traffic.

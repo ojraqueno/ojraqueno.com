@@ -1,0 +1,37 @@
+---
+title: My Vue.js Experience
+description: >-
+  Last year I wrote about Getting Started with Vue.js . I've been using Vue.js extensively from around that time up until now. In this post I will share my experiences with using the framework.
+publishedAt: 2019-02-19
+draft: false
+tags:
+  - vuejs
+originalUrl: https://ojdevelops.blogspot.com/2019/02/my-vuejs-experience.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c58c16070e01-vue.js_logo.svg.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c58c16070e01-vue.js_logo.svg.png)
+
+Last year I wrote about [Getting Started with Vue.js](/blog/getting-started-with-vuejs/). I've been using Vue.js extensively from around that time up until now. In this post I will share my experiences with using the framework.
+
+## It's Still Very, Very Easy
+
+With other JS frameworks I've tried, building simple apps and tutorial-type apps were easy. But, as the application's complexity grew, the development effort grew as well.
+
+For example, when working with AngularJS, it sometimes wasn't easy to use 3rd party plugins. Because AngularJS was a framework, any 3rd party plugins had to have an AngularJS port for them to work properly. If such a port doesn't exist, extra work is involved in order for them to work with AngularJS (eg. calling `$scope.$apply()` in appropriate places).
+
+That problem simply doesn't exist in Vue.js (at the very least, I haven't experienced that yet). I can use popular JS packages such as `axios`,`lodash`, even `jQuery` and integrate them into my app with absolutely no extra work.
+
+## Vue.js vs AngularJS
+
+When it comes to HTML markup, Vue.js is very similar with AngularJS. For example, in AngularJS there is a `ng-repeat` directive, while in Vue.js there is a `v-for` directive, and both do pretty much exactly the same thing. Other similarities include `ng-show` (`v-show` in Vue.js) and `ng-model` (`v-model` in Vue.js).
+
+However, as I mentioned above, the backend is extremely different. While in AngularJS everything has to be done in the "AngularJS way", there is no such restriction in Vue.js. That makes it very easy to learn Vue.js and also easy to integrate 3rd party plugins.
+
+For reasons stated above, I would recommend not to use AngularJS for new projects. Instead, use a newer framework / library like Vue.js, React, or even Angular.
+
+## Moving Forward
+
+I've only scratched the surface of Vue.js. I haven't used its component system in a production application yet, mainly because I've been working on a non-SPA and there are no use cases for reuse. I'm looking forward to using it though because I really like how the style, template, and script are encapsulated into single vue files (aka single-file components). So far, I'm pretty happy with using Vue.js.
+
+## Conclusion
+
+If you're an AngularJS developer and are thinking about learning a new JS framework, I strongly suggest you look at Vue.js. There are many similarities between AngularJS and Vue.js that would make transitioning very easy. Also, Vue.js is very easy to learn in itself. You can also take a look at the other two major JS frameworks today, React and Angular.

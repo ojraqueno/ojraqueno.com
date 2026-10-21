@@ -1,0 +1,130 @@
+---
+title: Init-only Properties
+description: >-
+  .NET 5 is out! And with it, C# 9, which adds a lot of new features to the language. In this post, I'm going to talk about one of my favorites, init-only properties .
+publishedAt: 2020-11-12
+draft: false
+tags:
+  - c-sharp-9
+originalUrl: https://ojdevelops.blogspot.com/2020/11/init-only-properties.html
+---
+.NET 5 is out! And with it, C# 9, which adds a lot of new features to the language. In this post, I'm going to talk about one of my favorites, **init-only properties**.
+
+## Immutability Before C# 9
+
+Before C# 9, we can make a class immutable by using **getter-only auto properties** together with a constructor whose arguments are used to populate those properties:
+
+```csharp
+
+public class Product
+{
+ public Product(string name)
+ {
+ Name = name;
+ }
+
+ public string Name { get; }
+}
+```
+
+This is an effective way for making classes immutable.
+
+We cannot change the property's value after the class has been instantiated:
+
+```csharp
+
+var product = new Product("Cool Product");
+
+product.Name = "Cooler product"; // compile error
+```
+
+We even can't change it from within the class:
+
+```csharp
+
+public class Product
+{
+ public Product(string name)
+ {
+ Name = name;
+ }
+
+ public string Name { get; }
+
+ public void SomeMethod()
+ {
+ Name = "Cooler product"; // compile error
+ }
+}
+```
+
+## Drawbacks
+
+That all works great; immutability is enforced. It has a couple of drawbacks though:
+
+-   **There has to be an appropriate constructor.** Having a constructor is fine if there are just a few properties. But if there are a lot of properties, the code will tend to become unreadable.
+-   **We can't use object initialization syntax.** Constructing an object via object initialization is typically more readable than constructing it via a constructor.
+
+These drawbacks may discourage developers from writing immutable code in this manner.
+
+## Init-only Properties to the Rescue
+
+C# 9 addresses these drawbacks by introducing **init-only properties**.
+
+An init-only property is a special variant of the `set` accessor. It can only be called during object initialization.
+
+Here's an example of the `Product` class which uses the init-only property:
+
+```csharp
+
+public class Product
+{
+ public string Name { get; init; }
+}
+```
+
+Notice that we are using the `init` accessor instead of the `set` accessor.
+
+Now, in addition to using an explicit constructor, we have the option to instantiate an object using the familar object initialization syntax:
+
+```csharp
+
+// We can use object initialization!
+var product = new Product
+{
+ Name = "Cool product"
+};
+```
+
+But in terms of immutability, the code works exactly the same way as it did before.
+
+We still can't change the property's value after the class has been instantiated:
+
+```csharp
+
+var product = new Product
+{
+ Name = "Cool product"
+};
+
+product.Name = "Cooler product"; // still a compile error
+```
+
+And we still can't change the property's value from within the class:
+
+```csharp
+
+public class Product
+{
+ public string Name { get; init ; }
+
+ public void SomeMethod()
+ {
+ Name = "Cooler product"; // still a compile error
+ }
+}
+```
+
+## Conclusion
+
+Making classes immutable leads to code that is easier to reason about. C# 9 helps developers write immutable classes by introducing init-only properties. Init-only properties make it possible to instantiate immutable classes using the familiar and readable object initialization syntax.

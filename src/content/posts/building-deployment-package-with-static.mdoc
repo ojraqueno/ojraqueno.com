@@ -1,0 +1,33 @@
+---
+title: Building a Deployment Package with Static Content
+description: >-
+  I was once working on a MVC 3 project. The project included the usual web stuff: controllers, views, models, images, css files, and javascript files. There are also a couple of Excel files that we use.
+publishedAt: 2013-09-24
+draft: false
+tags:
+  - deployment
+  - visual-studio
+originalUrl: https://ojdevelops.blogspot.com/2013/09/building-deployment-package-with-static.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/66ea36e88fae-building-a-deployment-package-with-static-content.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/66ea36e88fae-building-a-deployment-package-with-static-content.jpg)
+
+I was once working on a MVC 3 project. The project included the usual web stuff: controllers, views, models, images, css files, and javascript files. There are also a couple of Excel files that we use.
+
+Come deployment time, I followed the steps in [building a deployment package.](/blog/building-deployment-package-using/) To my surprise (horror), a lot of the css, javascript, and image files were not loaded! Even the Excel files could not be found. So what happened?
+
+## Including Files in the Deployment Package
+
+Class files, which are files that end with `.cs`, are included and built with no problem. However, special treatment has to be given to non-compiled or static files, such as css, javascript, and other non-compiled content.
+
+There are two steps for static files to get included in the package:
+
+1.  Add them to the solution.
+2.  Set the appropriate build action (such as `Content`).
+
+Adding an item to the solution is fairly simple: just right click on the containing folder, then choose `Add > Existing Item`, then look for the file you wish to add and add it. Note that even if a css / js file is not added to the solution, it will get loaded during debugging but will not be included in the deployment package. This situation rarely happens, but if it does, it is usually detected late.
+
+In addition to adding to the solution, the appropriate build action should also be specified for the static resource. For static resources, the build action is `Content`. To change the build action, right click on the file then click `Properties`. The `Build Action` is in the `Advanced` section. Just select `Content` and you're set. There are several build actions available, but I found that `Content` is enough for css, javascript, images, and even Excel files.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3f08f877747a-advanced-properties.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/3f08f877747a-advanced-properties.png)
+
+After following those steps, all the needed files will be included in the deployment package.

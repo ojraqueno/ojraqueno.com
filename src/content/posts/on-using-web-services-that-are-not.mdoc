@@ -1,0 +1,34 @@
+---
+title: On Using Web Services That Are Not Consumed by External Clients
+description: >-
+  My opinion on using web services that are not consumed by external clients is this: they should not be used.
+publishedAt: 2014-02-19
+draft: false
+tags:
+  - design
+  - wcf
+originalUrl: https://ojdevelops.blogspot.com/2014/02/on-using-web-services-that-are-not.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c4da4b24121a-on-using-web-services-that-are-not-consumed-by-external-clients.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c4da4b24121a-on-using-web-services-that-are-not-consumed-by-external-clients.jpg)
+
+My opinion on using web services that are not consumed by external clients is this: they should not be used.
+
+Following are the reasons and a short explanation of each. Please keep in mind that I am only talking about web services that are consumed by a web application in the same solution, and not web services that are exposed to other applications.
+
+**Performance**. When using web services, all data that crosses between the service boundaries have to be serialized and deserialized accordingly. Serialization and deserialization may be expensive operations.
+
+**Non-object oriented design**. The data contracts exposed by the service are types that have data but not behavior (DTO). This is in conflict with object oriented principles where objects both have data and behavior and that represent a well-defined abstraction. In addition, because DTOs are used, other types (ex. handlers) must be declared that operate on those DTOs. Again, these other types usually do not really conform to object oriented principles, in the sense that their focus is on what they do.
+
+**Other design limitations**. For example, a data member that has a getter only is not a valid data member. In addition, because WCF is meant to be cross-platform, some types cannot be valid data members.
+
+**Duplication**. A DTO type behind the service layer has a corresponding type in the web application itself. The corresponding type has the same data members as the DTO and is essentially a duplicate.
+
+**Configuration limitations**. In WCF, there is a limit on how long an operation can be allowed to return a value. There is also a limit on how large the data crossing between the service boundary is. Although these problems can be solved by tweaking the configuration, I propose that preventing the problem (by not using WCF) is better than fixing them after the fact.
+
+**Hosting and deployment requirements**. When using WCF in conjunction with a web application, both of them have to be hosted as separate applications in IIS. Both also have to be deployed separately, but always together.
+
+**Security**. When using WCF, security has to be implemented at the service level and at the web application level.
+
+**Valid for YAGNI**. Some might argue that the services might be used externally at some point in the future, and that therefore it is wise to put them in place now. While there are some situations that preparation is good, I believe that this is a case where the use of YAGNI is more wise.
+
+Overall, I believe that this usage of web services unnecessarily increases rather than decreases the complexity of an application. This in turn affects (whether directly or indirectly) all other internal and external factors: correctness, maintainability, quality, development time, etc.

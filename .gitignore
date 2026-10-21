@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# local R2 image staging (uploaded to Cloudflare, not committed)
+.r2-staging/

@@ -1,0 +1,233 @@
+---
+title: Using Methods With Value and Reference Types
+description: >-
+  In this post I will show you the practical usage of methods with value types and reference types in C#. I have used a console application to run the code I posted here. It might be helpful if you can also create your…
+publishedAt: 2013-04-23
+draft: false
+tags:
+  - net
+  - c-sharp
+originalUrl: https://ojdevelops.blogspot.com/2013/04/using-methods-with-value-and-reference.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/026e7e9b9162-using-methods-with-value-and-reference-types.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/026e7e9b9162-using-methods-with-value-and-reference-types.jpg)
+
+In this post I will show you the practical usage of methods with value types and reference types in C#. I have used a console application to run the code I posted here. It might be helpful if you can also create your own console application so you can try the code samples yourself.
+
+## Value and Reference Types in C#
+
+Here is the list of all value types in C#:
+
+-   Structs (ex: System.DateTime)
+-   Enums (ex: System.Data.CommandType)
+-   Integral types (char, sbyte, byte, short, ushort, int, uint, long, ulong)
+-   Float
+-   Decimal
+-   Double
+-   Bool
+
+And here are the reference types:
+
+-   class
+-   interface
+-   delegate
+-   dynamic
+-   object
+-   string
+
+## Using Methods With Value Types
+
+Consider the following method:
+
+```csharp
+
+static void AddTwo(int x)
+{
+ x = x + 2;
+}
+```
+
+Which is used in the following code fragment:
+
+```csharp
+
+int myInt = 5;
+AddTwo(myInt);
+Console.WriteLine("Value of myInt: {0}", myInt);
+```
+
+What do you think will be displayed as the value of 'myInt'?
+
+You might think that the answer is 7. However, this is not the correct answer. Instead, the value would still be 5. Inside the method, it will seem as if the value of the parameter changes. But once the method is finished, you will find that the original value of the variable passed to the method remains unaffected.
+
+This is the behavior of value types. In the AddTwo method, we say that the parameter x is *passed by value*. There is a way for the changes to persist even after the method finishes. But for now, let's talk about using methods with reference types.
+
+## Using Methods With Reference Types
+
+In the previous example, you saw that the original parameter remains unaffected. In other words, any changes made inside the method were not persisted once the method block finishes.
+
+When using reference types, there are some types of changes that will persist, and some that won't. To demonstrate these scenarios, let's create an employee class:
+
+```csharp
+
+public class Employee
+{
+ public int Id { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+}
+```
+
+And let's create a new John Smith instance:
+
+```csharp
+
+Employee john = new Employee
+{
+ Id = 1,
+ FirstName = "John",
+ LastName = "Smith"
+};
+```
+
+Now that we have an employee set up, we can create methods that will make changes to it and we can see if the changes will persist or not.
+
+The first method that we will create changes the name of the employee:
+
+```csharp
+
+static void ChangeName(Employee employee)
+{
+ employee.FirstName = "Jane";
+}
+```
+
+Now let's run the method:
+
+```csharp
+
+ChangeName(john);
+Console.WriteLine("Employee first name after ChangeName: {0}", john.FirstName);
+```
+
+You will be see that the name was successfully changed even after the method has finished. ***Changing property values of classes will persist even after the method finishes.***
+
+Now let's create another method. This time, the employee parameter will be set to null:
+
+```csharp
+
+static void Nullify(Employee employee)
+{
+ employee = null;
+}
+```
+
+And let's call the method this way:
+
+```csharp
+
+Nullify(john);
+Console.WriteLine("Employee is null after Nullify? {0}", john == null);
+```
+
+Now, will john be null?
+
+This time, the answer will be false. The changes to the parameter did not persist after the method block finished. Similarly for the following two methods:
+
+```csharp
+
+static void Newify(Employee employee)
+{
+ employee = new Employee
+ {
+ Id = 5,
+ FirstName = "Jane",
+ LastName = "Doe"
+ };
+}
+
+static void Assignify(Employee employee)
+{
+ Employee anotherEmployee = new Employee
+ {
+ Id = 5,
+ FirstName = "Jane",
+ LastName = "Doe"
+ };
+
+ employee = anotherEmployee;
+}
+```
+
+In the Newify method, the employee parameter is assigned to a new Employee object. In the Assignify method, the employee parameter is assigned to a different Employee object. Do you think the changes will persist?
+
+```csharp
+
+Newify(john);
+Console.WriteLine("Employee first name after Newify: {0}", john.FirstName);
+
+Assignify(john);
+Console.WriteLine("Employee first name after Assignify: {0}", john.FirstName);
+```
+
+The answer to that is no in both questions: the changes will not persist. Even after calling Newify and Assignify, the first name of the john object will not change. ***Changes to the reference of a reference type (ex: assigning to null, assigning to a new object, assigning to an existing object) will not be persisted outside of the method.***
+
+## Using the Ref and Out Parameters
+
+We have talked about changes that will not persist outside of the method. For value types, any change in the method does not persist. For reference types, assigning the parameter to something else will also not persist. How do we change that?
+
+The answer is by using the **ref** and **out** keywords. Let's modify the AddTwo method to read the following:
+
+```csharp
+
+static void NewAddTwo(ref int x)
+{
+ x = x + 2;
+}
+```
+
+Notice that now, the **ref** keyword is added to the parameter. And we now call the method in this way:
+
+```csharp
+
+int myInt = 5;
+NewAddTwo(ref myInt);
+Console.WriteLine("Value of myInt: {0}", myInt);
+```
+
+Notice also that the **ref** keyword is also added in method invocation. If you run the code, you will find that the answer is now 7: the changes to the variable in the method have been persisted even after the method block finishes.
+
+You can do the same for reference types. If you use the **ref** keyword on the Nullify, Newify, or Assignify methods, you will notice that the changes will persist after the methods have been called.  
+  
+In place of the **ref** keyword, you can also use the **out** keyword to achieve the same effect. The difference is that when using the **ref** keyword, the variable has to be assigned before using it as a parameter in the method.
+
+```csharp
+
+static void SetToSeven(ref int x)
+{
+ x = 7;
+}
+
+static void Main(string[] args)
+{
+ int myOtherInt;
+ SetToSeven(ref myOtherInt); // error: myOtherInt has to be assigned
+}
+```
+
+When using the **out** keyword, there is no need to initialize the variable.
+
+```csharp
+
+static void SetToSeven(out int x)
+{
+ x = 7;
+}
+
+static void Main(string[] args)
+{
+ int myOtherInt;
+ SetToSeven(out myOtherInt); // valid
+}
+```
+
+That's it! I hope you enjoyed this post and good luck with your project.

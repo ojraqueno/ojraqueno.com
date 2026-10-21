@@ -1,0 +1,71 @@
+---
+title: Top Tips for Creating Maintainable Software
+description: >-
+  If you write code on a regular basis, then no doubt you have come across code that is difficult to understand and, consequently, difficult to change. If you're like me, then you will most probably have written bad…
+publishedAt: 2017-06-10
+draft: false
+tags:
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2017/06/top-tips-for-creating-maintainable.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/d0b3c4c89af2-top-tips-for-creating-maintainable-software-small.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/d0b3c4c89af2-top-tips-for-creating-maintainable-software-small.jpg)
+
+If you write code on a regular basis, then no doubt you have come across code that is difficult to understand and, consequently, difficult to change. If you're like me, then you will most probably have written bad code yourself! The good news is that writing good code doesn't have to be a complicated exercise. Today I'm going to share some principles and practices that you can use to write maintainable software.
+
+## What is Maintainable Software?
+
+First I'm going to define what I mean by maintainability in the context of this blog post. Maintainability is the attribute of software that indicates **how easy it is to change**. The most common reasons for changing software are adding features, changing existing features, or fixing defects. When I talk about maintenance in this blog post, I am covering all of these reasons. Therefore, maintainable software is **software that is easy to change**, regardless of the reason for change.
+
+Writing maintainable software can touch on a *lot* of different areas, such as language choice, software architecture, software development methodology, and other higher level decisions. What we will focus on today are the things that the developer in the trenches can do. This is for the developers that read and write code everyday and who may not have much say in the higher level decisions mentioned above.
+
+With that, let's start!
+
+## Tip #1: Choose Good Names
+
+There is nothing else you can do that is as simple and effective as choosing good names.
+
+Almost everything in the code has a name or some sort of identifier. On the database level, there are database names, table names, column names, stored procedure names, and other database object names. On the project level, there are solution names, project names, folder names, and file names. On the class level, there are class names, method names, field and property names, and so forth. On the method implementation level, there are parameter names and local variable names. That is not an exhaustive list, but you get the idea.
+
+The main effect of choosing good names is **reducing the cognitive load of figuring out what exactly a certain code unit (project, class, method, variable) is about**. In general, the more specific the name, the better.
+
+A good project name reveals what the project might be for. A good class name reveals what kind of properties and methods might be on that class. A good method name reveals what kind of work it does and if it might return a value or not. A good variable name reveals what kind of information that variable might be holding.
+
+But what makes a name good? In the context of creating maintainable software, good names are **specific and intention-revealing**. They reveal the purpose or meaning of the thing being named for you (the developer), so that you don't have to examine its implementation anymore.
+
+## Tip #2: Use Bite-Sized Code Units, According to Responsibility
+
+By code units, I refer to whatever creates a scope in your programming language. For object-oriented languages such as C#, that would primarily be **classes** and **methods**, but also code blocks inside loops and `using` statements.
+
+Decomposing a program into several smaller code units rather than having fewer large code units is, in general, a good idea.
+
+The primary reason for that is tied to Tip #1: Choose Good Names. By extracting a portion of a large code unit into a new, smaller code unit, you are forced to give it a name. When a good name is chosen, the readability of the program improves a little bit. Do the extraction often enough and the readability will improve quite a lot.
+
+How do we know which parts of code to extract out? By thinking in terms of **responsibility**.
+
+Responsibility can be tied to a business rule or business process. For example, in an HR talent management application, several checks might need to be made in order to determine if a probationary employee is eligible for regularization or not. Each of these checks can be extracted into their own code units, leaving the containing method shorter and less cluttered.
+
+Responsibility can also be tied to software's technical implementation. In an MVC or MVVM architecture, responsibilities for UI manipulation are separate from the responsibilities of business logic. Consequently, code that manipulates the UI should be separate from code that performs business logic. In Web Forms code behind files, WPF code behind files, and ASP.NET MVC controllers, these responsibilities can be mixed, presenting an excellent opportunity to refactor.
+
+## Tip # 3: Have Good Coding Conventions
+
+By convention I mean "a rule, method, or practice established by usage". Coding conventions, then, are rules or guidelines that underlie how software is written within a particular context.
+
+The most familiar example of coding conventions are design guidelines. These are things like prefix private variables with underscores, use nouns for class names and properties, and use verbs for method names. Using conventions, like using good names, reduce the cognitive effort needed to understand the software.
+
+Conventions can also apply to how the implementation of a feature is written. For example, in writing unit tests, there is the Arrange-Act-Assert convention. In writing business features, we have the Validate-Perform Business Logic-Return the Result convention. Again, having conventions for implementation patterns make the code easier to understand, and also, it makes adding new features easier to do.
+
+Conventions can also apply to the architecture of an application. These are things like use a dependency injection container and use an ORM for data access. You might not have a chance to influence these decisions as a developer in the trenches, but it would be a good idea to suggest having these conventions if your team doesn't have one.
+
+Conventions are good because they reduce the number of decisions that you have to make. This leaves you free to focus on the actual implementation of the business process.
+
+Also, conventions are good because they make the software easier to understand. There might be a learning curve in learning the convention used, but it's worth the effort to learn. Once the convention is familiar to you, the rest of the software will be easier to comprehend.
+
+At this point I would like to note how important the first phases of software development is, because this is when conventions are established. During this time, the architects / senior developers should work closely with the development team in order to reach an agreement on what conventions should be used. I have seen this step being skipped, and the resulting lack of conventions made the code difficult to understand and change.
+
+## Conclusion
+
+In this post I have given some of my top tips for creating maintainable software. The common theme underlying these tips are making the code easier to understand and, therefore, easier to change.
+
+These tips apply regardless of programming paradigms (object-oriented / functional), language, or technology stack. You may find that there is also some overlap between these tips.
+
+I encourage you to apply what you have learned here to the software you're working on and see the results!

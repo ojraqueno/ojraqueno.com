@@ -1,0 +1,165 @@
+---
+title: Strongly-Typed AppSettings
+description: >-
+  Application settings for .NET projects provide a way to change the behavior of a program without recompilation. These settings are typically stored as key-value pairs in the web.config or app.config files and can be…
+publishedAt: 2016-02-29
+draft: false
+tags:
+  - c-sharp
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2016/02/strongly-typed-appsettings.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6196c3c5eb59-strongly-typed-appsettings.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6196c3c5eb59-strongly-typed-appsettings.jpg)
+
+Application settings for .NET projects provide a way to change the behavior of a program without recompilation. These settings are typically stored as key-value pairs in the `web.config` or `app.config` files and can be accessed through the `ConfigurationManager` class provided by the framework. In this post we will be taking configuration access to the next level by providing a strongly-typed wrapper around the `ConfigurationManager` class.
+
+## Background
+
+Configuration values can be accessed through the `ConfigurationManager` class. For example, if we have the following setting in the `web.config` or `app.config` file:
+
+```xml
+
+<appSettings>
+ <add key="FolderName" value="Backup" />
+</appSettings>
+```
+
+We will be able to access the value using the following code:
+
+```csharp
+
+string folderName = ConfigurationManager.AppSettings["FolderName"];
+```
+
+And if there is a non-string value, we have to first get the app setting value as a string, then later convert it:
+
+```xml
+
+<appSettings>
+ <add key="MaxCount" value="10" />
+</appSettings>
+```
+
+```csharp
+
+int maxCount = Convert.ToInt32(ConfigurationManager.AppSettings["MaxCount"]);
+```
+
+This works, but there are a few items that we can improve on:
+
+1.  **Repetition.** If we need to access the same configuration value in different places, we need to repeat the same access code. Maybe not such a big problem, however...
+2.  **No strong typing.** The string used to lookup the configuration value is not strongly-typed. This, combined with point number 1, makes changing the key difficult and error prone, since the code has to be updated in multiple places when the name of the key changes.
+3.  **Repetition (2).** The code `ConfigurationManager.AppSettings` appears multiple times. If there are many non-string values, then the conversion code would also appear multiple times.
+4.  **Tight coupling.** I saved it as the last point since it might not be a big deal in this scenario. But if we stick with directly accessing the `ConfigurationManager` class, it will be hard to introduce a different settings storage implementation in the future.
+
+In this post we will be addressing all of these problems. Although we will not be able to eliminate all of them completely, at the end of the post we will be in a better place than where we started.
+
+## Introducting an AppSettings Class
+
+The first thing we are going to do is to introduce a class that centralizes application setting access. Following is what such a class might look like:
+
+```csharp
+
+public class AppSettings
+{
+ // Expose configuration values as static properties
+
+ public static string FolderName
+ {
+ get
+ {
+ return ConfigurationManager.AppSettings["FolderName"];
+ }
+ }
+
+ public static int MaxCount
+ {
+ get
+ {
+ return Convert.ToInt32(ConfigurationManager.AppSettings["MaxCount"]);
+ }
+ }
+
+ // .. Other properties ..
+}
+```
+
+So we have a simple class named `AppSettings` with two properties, each representing a configuration setting. Now, to get a configuration setting, we can simply do:
+
+```csharp
+
+string folderName = AppSettings.FolderName;
+int maxCount = AppSettings.MaxCount;
+```
+
+With just a small amount of code, we have improved on the following issues already:
+
+1.  **Repetition**. We would no longer repeatedly see the call to `ConfigurationManager.AppSettings` anywhere we need a configuration file. Yes, we would need to repeat the custom access code we made (eg. `AppSettings.FolderName`), but this is a better situation than the first one, especially if you consider...
+2.  **Strong typing.** Inside the `AppSettings` class, we are still using some magic strings. But everywhere else, there is strong typing. Misspelling properties would produce compile errors, and type conversions are already handled.
+3.  **Repetition (2).** If ever the key names of the settings need to be changed, they would only be changed in one place in the code only. This is a great boon for code maintainability.
+4.  **Tight coupling**. If ever there is a need to implement a different settings storage mechanism, the changes would (ideally) only be isolated inside the `AppSettings` class.
+
+## AppSettings Class - Second Iteration
+
+Believe it or not, there is still some room for improvement in our `AppSettings` class. What we can do is to introduce private helper methods that take care of calling `ConfigurationManager.AppSettings` and doing type conversions. Following is a new version implementing these changes:
+
+```csharp
+
+public class AppSettings
+{
+ public static string FolderName { get { return String("FolderName"); } }
+ public static int MaxCount { get { return Int("MaxCount"); } }
+
+ // .. Other properties ..
+
+ #region Helpers
+
+ private static int Int(string key)
+ {
+ return Convert.ToInt32(String(key));
+ }
+
+ private static string String(string key)
+ {
+ return ConfigurationManager.AppSettings[key];
+ }
+
+ // .. Other helpers for type conversions ..
+
+ #endregion Helpers
+}
+```
+
+In the new version, we have introduced two private helper classes called `Int` and `String`. Although they are very simple methods, they are very powerful from a code maintainability / readability perspective. As you can see, these helper methods have allowed us to compress our getters to the point where a single-line implementation makes sense.
+
+In addition, if we wanted to, we will be able to implement validation in the helper methods instead of in every property. This centralizes things even further and makes it easy to change the code in the future. For example, in the `Int` method:
+
+```csharp
+
+public class AppSettings
+{
+ // ...
+
+ private static int Int(string key)
+ {
+ try
+ {
+ return Convert.ToInt32(String(key));
+ }
+ catch (FormatException ex)
+ {
+ // If we use the Int method every time we are trying to get an
+ // int value from configuration, any error can be handled in
+ // one place only (which is here)
+ }
+ }
+
+ // ...
+}
+```
+
+## Conclusion
+
+In this post we talked about some of the issues present when accessing application settings directly through the `ConfigurationManager` throughout an application. To solve / reduce the impact of these problems, we introduced a custom class. Our custom class, although conceptually simple, is very powerful from a code maintainability perspective, as it provides strong typing and centralized access of configuration values.
+
+*UPDATE March 3, 2016*: Added a sample of type checking. Thanks to [@jpbartolome14](https://twitter.com/jpbartolome14) for the suggestion.

@@ -1,0 +1,207 @@
+---
+title: Using JQuery AJAX GET with ASP.NET MVC JsonResult
+description: >-
+  Hi, in this post I will show how the client can communicate with the server using AJAX. Specifically, the client will be using the JQuery library, the server will be running on ASP.NET MVC, and the HTTP Method will…
+publishedAt: 2013-04-22
+draft: false
+tags:
+  - net
+  - ajax
+  - asp-net
+  - c-sharp
+  - jquery
+  - json
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2013/04/using-jquery-ajax-get-with-aspnet-mvc.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/ae045236d717-using-jquery-ajax-get-with-asp.net-mvc-jsonresult.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/ae045236d717-using-jquery-ajax-get-with-asp.net-mvc-jsonresult.jpg)
+
+Hi, in this post I will show how the client can communicate with the server using AJAX. Specifically, the client will be using the JQuery library, the server will be running on ASP.NET MVC, and the HTTP Method will be GET.
+
+First off, create an MVC project in Visual Studio. I haven't tested MVC 2, but either MVC 3 or MVC 4 should work.
+
+## Server-Side Setup
+
+Add an employee model with a few properties:
+
+```csharp
+
+public class Employee()
+{
+ public int Id { get; set; }
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+}
+```
+
+In the Home controller, let's add the following action:
+
+```csharp
+
+public ActionResult GetEmployee()
+{
+ Employee john = new Employee
+ {
+ Id = 1,
+ FirstName = "John",
+ LastName = "Smith"
+ };
+
+ return Json(new { employee = john }, JsonRequestBehavior.AllowGet);
+}
+```
+
+Notice the Json method. What it does is it transforms any object that we pass into it into the Json format. In our example above, the resulting Json object would look like this:
+
+```javascript
+
+{
+ "employee":
+ {
+ "Id":1,
+ "FirstName":"John",
+ "LastName":"Smith"
+ }
+}
+```
+
+You can think of the Json object as a Dictionary in C#. In our example, it will be a dictionary with one entry only, with the 'key' being "employee" and the 'value' being the employee object.
+
+Also notice how the employee object was transformed into Json. You can also think of it as a Dictionary. This time though, the property names (Id, FirstName, LastName) became the dictionary 'keys' while the property values (1, "John", "Smith") became the dictionary 'values'. This is done automatically by the Json() method.
+
+Also don't forget the JsonRequestBehavior.AllowGet parameter. If you do not specify this, you will not be able to perform a GET operation and navigating to the page will result to an error.
+
+## Testing the Server-Side Setup
+
+At this point, let's go ahead and see what that looks like in the browser, even before we add the Jquery AJAX call. First, run / debug the solution in Visual Studio. Then, append Home/GetEmployee to the address bar. The complete address should now look something like this:
+
+```plaintext
+
+http://localhost:1382/Home/GetEmployee
+```
+
+Depending on your settings, you might have a different port number.
+
+When you go to that URL, this should appear in the browser window:
+
+```plaintext
+
+{"employee":{"Id":1,"FirstName":"John","LastName":"Smith"}}
+```
+
+This indicates that the method works (i.e. the server recognized the call and is able to produce the correct response).
+
+## Client-Side Setup
+
+Now let's look at how we might might display this data in our existing page using JQuery syntax. In this tutorial, I am using Jquery 1.9.1.
+
+First off, add the JQuery references to your project. If you do not have JQuery on your local machine, you can download it [here](http://jquery.com/download/).
+
+Now add the following inside the body tag of your view:
+
+```xml
+
+<div id="id"></div>
+<div id="firstName"></div>
+<div id="lastName"></div>
+<p id="getEmployee">Get Employee</p>
+```
+
+As you may have guessed, we will use the 'Get Employee' paragraph to initiate the method call. Then, once we have received the data, we will put the values of the Id, FirstName, and LastName into the corresponding divs.
+
+Now add a new javascript file and reference it in the view. Inside the file, put this code:
+
+```javascript
+
+$(document).ready(function () {
+ $('p#getEmployee').click(function () {
+ GetEmployeeUsingAjax();
+ });
+});
+
+function GetEmployeeUsingAjax() {
+ $.ajax({
+ type: 'GET',
+ url: 'Home/GetEmployee',
+ success: function (emp) {
+ $('#id').text(emp.employee.Id);
+ $('#firstName').text(emp.employee.FirstName);
+ $('#lastName').text(emp.employee.LastName);
+ },
+ error: function (emp) {
+ alert('error');
+ }
+ });
+}
+```
+
+The first section simply says: "when the paragraph with id 'getEmployee' gets clicked, execute the method named 'GetEmployeeUsingAjax'".
+
+The second section is where the GetEmployeeUsingAjax function is defined, and this is where all the AJAX action happens. The syntax used by JQuery to execute an AJAX request is this:
+
+```javascript
+
+$.ajax({
+ type: /* the request type */,
+ url: /* the URL */,
+ success: function (response) {
+ // handles success
+ },
+ error: function (response) {
+ // handles error
+ }
+ // there are also other settings, but they are not needed in this example
+});
+```
+
+The 'type' is the request type, which in this case is "GET". The url is the url where the data will be retrieved, which in this case is '/Home/GetEmployee'. Note that in specifying the url, there is no longer any need to put the 'http://localhost:1382' fragment.
+
+The success function is where we actually map the data we received to the page. Note that you can use any variable name in the success function handler. You can use 'function (response)', 'function (data)', 'function (emp)', or any variable name that you like. The same goes with the error function handler.
+
+In our example, the response object is the Json object we retrieved. As shown earlier, the Json object will have the following structure:
+
+```javascript
+
+{
+ "employee":
+ {
+ "Id":1,
+ "FirstName":"John",
+ "LastName":"Smith"
+ }
+}
+```
+
+Therefore, to access the employee object, we would have to append '.employee' to the response variable. For example, if we used 'function (response)' in our success handler, we can access the employee object using 'response.employee'. In the same way, to access the Id, we would have to use 'response.employee.Id'.
+
+In our example, we used 'emp' as the variable name in the success function handler. And since we want to assign the values to the corresponding divs, we ended up with this code:
+
+```javascript
+
+// ...
+success: function (emp) {
+ $('#id').text(emp.employee.Id);
+ $('#firstName').text(emp.employee.FirstName);
+ $('#lastName').text(emp.employee.LastName);
+},
+// ...
+```
+
+And that's it! The values retrieved should now get displayed on the page.
+
+## UPDATE: Jquery AJAX Shorthand
+
+There is also a shorthand syntax for JQuery AJAX GET calls. If we use the shorthand syntax, our method call would now look like this:
+
+```javascript
+
+$.get('/Home/GetEmployee', function(data) {
+ $('#id').text(data.employee.Id);
+ $('#firstName').text(data.employee.FirstName);
+ $('#lastName').text(data.employee.LastName);
+});
+```
+
+Since we use the '$.get' method, JQuery understands this as an AJAX GET call. We also specified the URL of the action, as well as a callback function.
+
+This ends our discussion of JQuery AJAX GET with ASP.NET MVC. I hope you find this helpful, and good luck with your projects!

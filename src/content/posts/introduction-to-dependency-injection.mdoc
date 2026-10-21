@@ -1,0 +1,259 @@
+---
+title: Introduction to Dependency Injection - Part 1
+description: >-
+  The concept of dependency injection has been around for a long time. But now that dependency injection is baked into ASP.NET Core 1.0, I thought it would be a good time to write about what it is and why and how we…
+publishedAt: 2016-04-25
+draft: false
+tags:
+  - asp-net
+  - c-sharp
+  - design
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2016/04/introduction-to-dependency-injection.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f252ec265524-introduction-to-dependency-injection-part-1.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f252ec265524-introduction-to-dependency-injection-part-1.jpg)
+
+The concept of dependency injection has been around for a long time. But now that dependency injection is baked into ASP.NET Core 1.0, I thought it would be a good time to write about what it is and why and how we can take advantage of it.
+
+This post is part 1 of a two-part series on dependency injection. [Click here to go to part two.](/blog/introduction-to-dependency-injection_28/)
+
+## Background
+
+Suppose we have an e-commerce system and that part of the requirements is that whenever an order is processed, an email should be sent to the buyer. In the design of a system, we came up with two classes: `OrderProcessor`, which is responsible for taking orders, and `EmailProcessor`, which is responsible for sending out email.
+
+Since the email should be sent during the process of taking an order, it makes sense for the `OrderProcessor` class to use the `EmailProcessor` class. Sample:
+
+```csharp
+
+public class OrderProcessor
+{
+ public void ProcessOrder(Order order)
+ {
+ // Do something with order
+
+ // Send email
+ var emailProcessor = new EmailProcessor();
+ emailProcessor.Send(/* parameters here */);
+ }
+}
+```
+
+Which would be used like this:
+
+```csharp
+
+var order = // assemble order object
+
+var orderProcessor = new OrderProcessor();
+orderProcessor.ProcessOrder(order);
+```
+
+It works correctly, and everything's fine.
+
+But what if we have to create two `EmailProcessor` classes? Say, the implementation of one sends to a test account, and the implementation of the other sends to the buyer's actual email address?
+
+We can easily solve that by introducing an `IEmailProcessor` interface:
+
+```csharp
+
+public interface IEmailProcessor
+{
+ void Send(/* parameters here */);
+}
+
+public class TestEmailProcessor : IEmailProcessor
+{
+ public void Send(/* parameters here */)
+ {
+ // Send to test email address
+ }
+}
+
+public class RealEmailProcessor : IEmailProcessor
+{
+ public void Send(/* parameters here */)
+ {
+ // Send to real email address
+ }
+}
+```
+
+The implementation of the `ProcessOrder` will change to:
+
+```csharp
+
+public class OrderProcessor
+{
+ public void ProcessOrder(Order order)
+ {
+ // Do something with order
+
+ // Send email
+ // Instantiate either TestEmailProcessor or RealEmailProcessor
+ IEmailProcessor emailProcessor = new TestEmailProcessor();
+ emailProcessor.Send(/* parameters here */);
+ }
+}
+```
+
+This works also. However, we now have introduced a tight coupling between the `OrderProcessor` and the type of `IEmailProcessor` being used. (Actually, there was tight coupling even in the first example, but since there was only one implementation of `EmailProcessor` at the time, it wasn't that big of a deal. More on this later.) The `OrderProcessor` class is explicitly instantiating an instance of `TestEmailProcessor` or `RealEmailProcessor` inside the `ProcessOrder` implementation.
+
+It would be much better if all the `OrderProcessor` knows is that it *has* to make use of some `IEmailProcessor` implementation, but doesn't know exactly *which* implementation that was going to be.
+
+## Enter Dependency Injection
+
+We can solve this problem by using dependency injection. I believe it would be easier to understand dependency injection by looking at a code sample first.
+
+For the `OrderProcessor` class, what we can do is to create a constructor that takes an `IEmailProcessor` object as a parameter and store it in some private field. If we do that, the `ProcessOrder` would no longer need to instantiate a specific implementation of `IEmailProcessor`. It can just use the one that was passed as a parameter in the constructor and stored in the private field:
+
+```csharp
+
+public class OrderProcessor
+{
+ private readonly IEmailProcessor _emailProcessor;
+
+ public OrderProcessor(IEmailProcessor emailProcessor)
+ {
+ _emailProcessor = emailProcessor;
+ }
+
+ public void ProcessOrder(Order order)
+ {
+ // Do something with order
+
+ // Send email
+ // We can just use the _emailProcessor field
+ _emailProcessor.Send(/* parameters here */);
+ }
+}
+```
+
+The usage will change, too:
+
+```csharp
+
+// Now we have to instantiate the email processor at this level
+var emailProcessor = new TestEmailProcessor();
+
+var order = // assemble order object
+
+var orderProcessor = new OrderProcessor(emailProcessor);
+orderProcessor.ProcessOrder(order);
+```
+
+And that is dependency injection. **We have injected (for example: passed as a parameter) a dependency (an object that is used by another object) into the `OrderProcessor` class.** In our example, we are passing a parameter into the constructor (this is known as Constructor Injection) and the dependency is the instance of `IEmailProcessor`.
+
+## Aren't We Just Moving the "New" Statement Somewhere Else?
+
+Yes, we are still manually instantiating an implementation of `IEmailProcessor` using the `new` keyword. But the important thing to realize is that we are doing that from the calling code and not from the class that has the dependency.
+
+**We are moving the responsibility of determining / creating which `IEmailProcessor` implementation to use out from the `OrderProcessor` class, so that the `OrderProcessor` can just focus on executing logic that is directly related to processing orders.**
+
+## Where Should All the "New" Statements be Located?
+
+Let's take a look at the usage again:
+
+```csharp
+
+var emailProcessor = new TestEmailProcessor();
+var order = // assemble order object
+
+var orderProcessor = new OrderProcessor(emailProcessor);
+orderProcessor.ProcessOrder(order);
+```
+
+We see that it is at this level that we are using the `new` keyword.
+
+But what if this snippet was inside of yet another class, for example, a `CheckoutProcessor` class?
+
+```csharp
+
+public class CheckoutProcessor()
+{
+ public void Checkout(/* parameters here */)
+ {
+ var emailProcessor = new TestEmailProcessor();
+ var order = // assemble order object
+
+ var orderProcessor = new OrderProcessor(emailProcessor);
+ orderProcessor.ProcessOrder(order);
+ }
+}
+```
+
+In that case, we would need to push the "new" statements one level up the calling chain, and perhaps also introduce an `IOrderProcessor` interface as well:
+
+```csharp
+
+public class CheckoutProcessor()
+{
+ private readonly IOrderProcessor _orderProcessor;
+
+ public CheckoutProcessor(IOrderProcessor orderProcessor)
+ {
+ _orderProcessor = orderProcessor;
+ }
+
+ public void Checkout(/* parameters here */)
+ {
+ var order = // assemble order object
+
+ _orderProcessor.ProcessOrder(order);
+ }
+}
+```
+
+Usage:
+
+```csharp
+
+var emailProcessor = new TestEmailProcessor();
+var orderProcessor = new OrderProcessor(emailProcessor);
+var checkoutProcessor = new CheckoutProcessor(orderProcessor);
+
+checkoutProcessor.Checkout(/* parameters here */);
+```
+
+The dependency chain can be deep, so the question is, where should all the `new` statements live?
+
+For ASP.NET MVC web applications, that would typically be at the controller level. Something like this:
+
+```csharp
+
+public class MyController : Controller
+{
+ private readonly IEmailProcessor _emailProcessor;
+ private readonly IOrderProcessor _orderProcessor;
+
+ // And, supposing that we have introduced an ICheckoutProcessor interface:
+ private readonly ICheckoutProcess _checkoutProcessor; 
+
+ public MyController()
+ {
+ _emailProcessor = new TestEmailProcessor();
+ _orderProcessor = new OrderProcessor(emailProcessor);
+ _checkoutProcessor = new CheckoutProcessor(orderProcessor);
+ }
+
+ public ActionResult MyAction()
+ {
+ // At this point, all the implementations are ready to use.
+ _checkoutProcessor.Checkout(/*parameters here*/);
+ }
+
+ public ActionResult AnotherAction()
+ {
+ // All implementations are available throughout the controller.
+ }
+}
+```
+
+## What Happens if There are Lots of Dependencies or Deep Dependency Chains?
+
+When there are a lot of dependencies or the dependency chains run deep, it can be difficult to manage all of those `new` statements. But this problem can be solved as well. [In the next post](/blog/introduction-to-dependency-injection_28/), we will take a look at dependency injection frameworks and how they can solve this kind of problem.
+
+## Conclusion
+
+In this post we saw an example of dependency injection in action and took a look at the motivation behind it. The main purpose of using dependency injection is to move the responsibility of choosing and/or creating the implementation of dependencies out of the dependent code and into somewhere else. That "somewhere else" is typically at the topmost level, and, for ASP.NET MVC web applications, can be at the controller level.
+
+In the next post, we will push the dependency level up one level, so that even our controllers will have its dependencies injected into it via constructors. This can be achieved by using dependency injection frameworks.

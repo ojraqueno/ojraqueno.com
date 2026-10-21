@@ -1,0 +1,99 @@
+---
+title: Pure vs Impure Functions
+description: >-
+  My partner, who is also a developer, once asked me what the difference between functional and object-oriented programming is. There are many differences, and this post explores one of them: the usage of pure and…
+publishedAt: 2019-04-08
+draft: false
+tags:
+  - c-sharp
+  - functional-programming
+originalUrl: https://ojdevelops.blogspot.com/2019/04/pure-vs-impure-functions.html
+---
+My partner, who is also a developer, once asked me what the difference between functional and object-oriented programming is. There are many differences, and this post explores one of them: the usage of pure and impure functions.
+
+What are pure and impure functions?
+
+A **pure** function does not have side effects. A **side effect** is a change in state that happens outside of a function that gets persisted even after the function goes out of scope. **Impure** functions are everything else.
+
+Here are some examples to clarify. First, a pure function:
+
+```csharp
+
+// Pure
+int GetSum(int a, int b)
+{
+ return a + b;
+}
+```
+
+That is a pure function, because it does not affect any state that is outside the scope of the function.
+
+Consider this impure equivalent:
+
+```csharp
+
+// Impure
+int sum = 0;
+
+void ComputeSum(int a, int b)
+{
+ sum = a + b;
+}
+```
+
+That is an impure function, because it modifies the `sum` variable, and the modification persists even after the method has gone out of scope.
+
+When using an object-oriented language, it is very easy to write and see examples of impure functions.
+
+Consider the following:
+
+```csharp
+
+// Impure
+void ComputeFullName(Person person)
+{
+ person.FullName = person.FirstName + " " + person.LastName;
+}
+```
+
+That is impure, because it modifies the `person.FullName` property, and the change persists even after the method has gone out of scope.
+
+This is the pure equivalent:
+
+```csharp
+
+// Pure
+string GetFullName(Person person)
+{
+ return person.FirstName + " " + person.LastName;
+}
+```
+
+That is pure, because it does not modify any property or variable.
+
+Side effects are not only limited to modifying data. Consider this method that writes to the console:
+
+```csharp
+
+// Impure
+void Print(string message)
+{
+ Console.WriteLine(message);
+}
+```
+
+Even though no modifications were made, this is still an impure function, because some outside state was affected.
+
+In this particular case, the state we are talking about is the state of the console window. Before the function was called, there was no message printed on it. But afterwards, there will be. And the message there will persist even after the method has gone out of scope.
+
+What does pure and impure functions have to do with functional programming?
+
+**When programming in a functional style, pure functions are preferred over impure functions.**
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/29081ca013f7-f-sharp-logo.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/29081ca013f7-f-sharp-logo.png)
+
+*F# logo*
+
+There are functional programming languages that make this easy, like Haskell and F#. And while you *can* program in a functional way using an object-oriented language, the resulting syntax is usually verbose and hard to read.
+
+Regardless of language used, the bottom line is that pure functions dominate the code base of a program that is written in a functional style.

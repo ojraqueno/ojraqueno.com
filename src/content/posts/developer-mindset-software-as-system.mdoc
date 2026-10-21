@@ -1,0 +1,63 @@
+---
+title: Developer Mindset - Software as a System
+description: >-
+  In this post I will share a mindset that would help you build cleaner and more maintainable code. I am calling this as thinking of "Software as a System".
+publishedAt: 2016-05-16
+draft: false
+tags:
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2016/05/developer-mindset-software-as-system.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b2b4566e16c5-developer-mindset-software-as-a-system.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b2b4566e16c5-developer-mindset-software-as-a-system.jpg)
+
+In this post I will share a mindset that would help you build cleaner and more maintainable code. I am calling this as thinking of "Software as a System".
+
+## What Does a Developer Do?
+
+Let's get this question out of the way first. What does a developer do? Write code? Yes, a developer writes code. But on a deeper level, is that it? Is "writing code" the end-goal of being a software developer? A more important question is: *why* does a developer write code?
+
+You will get different answers from different people. But, if you are a typical developer and you are employed and working on software applications for some client, the answer boils down to this: **a developer writes code to solve a business problem**. Whether that is automating some business process, performing calculations that are impossible to do by hand, or just moving data around, a developer's job is to solve a business problem in exchange for compensation.
+
+In other words, fulfilling requirements is the primary goal of software development activities. We make things appear on the screen, enable CRUD operations, manage deployment activities, and test / debug applications. In the end, the client is happy and we get paid. As long as the requirements are met, everything is okay.
+
+This requirements-centered way of thinking is prevalent among software developers precisely because it achieves the goal of fulfilling requirements. But when thinking in this way, I find that many important aspects of software development get neglected. Some of the most common examples are:
+
+-   Class design - properties or groups of properties that should belong in separate classes get mixed together in one, or vice versa.
+-   Class design part 2 - groups of variables that often appear together (such as in parameters of methods) remain separate, instead of being consolidated into a class.
+-   Naming consistency - example: methods that ultimately insert entries into a database are called "Add" in some parts, "Insert" in other parts, "Create" in yet other parts, and so on.
+-   Repetition - a lot of duplicate code exists. These codes are not given a proper home class.
+-   Design consistency - an operation (example: getting records from the database with paging and sorting options) gets implemented one way in one part of the code, another way in another part, and so on.
+
+There are many, many more examples. Being software developers (and therefore rational and smart), why do we make these mistakes? I reason that **these important aspects of writing code are neglected because of too much focus on fulfilling requirements**. Now, don't get me wrong - well-designed software is useless if it does not fulfill requirements. But I strongly believe that software can fulfill requirements *and at the same time* be well-written by introducing a new mindset.
+
+This mindset what I call thinking of "Software as a System".
+
+## Software as a System
+
+Many metaphors have been used to describe software. The most common involve comparing software to a house, an engine, or to a plant. For our purposes, the most helpful metaphor would be to compare software to an engine, specifically, to an automobile engine.
+
+In the "Software a System" mindset, software is **a collection of codes that work together, like an automobile engine, that happens to fulfill business requirements**. Notice how this definition shifts focus from requirements to the software itself. **Like an automobile engine, software must be built well and undergo regular maintenance in order to perform at its best**. And by "perform", I'm not just talking about speed, but all aspects that are related to good software: maintainability, clarity, consistency, good design, and of course, correctness.
+
+"Software as a System" refers to thinking of the actual software first (that is, how the code interacts with each other, good naming practices, good design, etc.) in light of fulfilling business requirements and, eventually, implementing business requirements.
+
+It's like assembling an engine also: the end goal is being able to use the engine to power an automobile. During construction of the engine, although thought goes to what type of car it will eventually belong to and what the engine should be capable of doing (the requirements), the focus is completely on the construction of the engine - making sure that everything is made correctly (writing the software system).
+
+When the focus is on building the software system, we suddenly becomes aware of things that were being neglected before. Unused `using` namespaces are noticed and gotten rid of. Duplicate codes get revealed and are moved to a centralized location. Inconsistent and bad names suddenly jump out and scream to get refactored. Even the order of properties and methods become important as we strive to build the best software system.
+
+## Writing Good Code: Is It Worth It?
+
+I once experienced being told something like this: "We don't have time to make the code pretty." The reasoning goes like this: caring for how the code is written will result in more development time, because it takes a longer time to write good code than to write not-so-good code.
+
+When we first think about it, the reasoning seems valid and rational. But after more thought and experience, it turns out that this is not the case at all.
+
+See, code gets read a lot more times that it gets written. A chunk of code gets read everytime it participates in debugging, gets studied, or otherwise needs to get changed. Code that is written once will get read multiple times (according to one estimate, 10 times).
+
+Reading code that's hard to read takes a toll on our brain and takes a longer time to read compared to code that's well-written. If bad code is read 10 times, the productivity loss experienced is multiplied by 10 times. And it doesn't happen down the road, it happens immediately - **the effects of bad code are immediate and perpetual**. It is a much better investment to spend a little time to write good code in the beginning and reap the benefits from there on, rather than to write code quickly the first time around and get slowed by it everytime that code is encountered.
+
+It's not that we don't have time to write good code; rather, **we don't have time to *not* write good code**.
+
+## Conclusion
+
+In this post we talked about a new mindset I am calling "Software as a System", a mindset where more focus is given to the actual software system than in directly fulfilling the requirements. Of course, well-written software that doesn't fulfill requirements is worthless, but this mindset will help developers think about important aspects of code that can be neglected by being too focused on requirements.
+
+I hope that I was able to explain the concept well. Let me know what you think by leaving a comment below!

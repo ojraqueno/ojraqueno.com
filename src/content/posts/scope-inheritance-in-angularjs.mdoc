@@ -1,0 +1,72 @@
+---
+title: Scope Inheritance in AngularJS
+description: >-
+  Scopes in AngularJS use prototypical inheritance. When a child scope tries to access a variable, it first looks for that variable in its own scope. If it doesn't find any, it looks for it in the parent scope, and so…
+publishedAt: 2013-12-13
+draft: false
+tags:
+  - angularjs
+  - javascript
+originalUrl: https://ojdevelops.blogspot.com/2013/12/scope-inheritance-in-angularjs.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/66af3f380cf5-scope-inheritance-in-angularjs.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/66af3f380cf5-scope-inheritance-in-angularjs.jpg)
+
+Scopes in AngularJS use prototypical inheritance. When a child scope tries to access a variable, it first looks for that variable in its own scope. If it doesn't find any, it looks for it in the parent scope, and so on until the `$rootScope` is reached. This post will illustrate this concept of inheritance in AngularJS.
+
+## The Code
+
+Consider the following HTML snippet (the ng-app and some other parts have been stripped out):
+
+```xml
+
+<div class="container" ng-init="greeting = 'Hello, world!'">
+ <div class="row">
+ <div class="col-md-12">
+ <h1>{{greeting}}</h1>
+ <input type="text" ng-model="greeting" />
+ </div>
+ </div>
+ <div class="row" ng-controller="HomeCtrl">
+ <div class="col-md-12">
+ <h1>{{greeting}}</h1>
+ <input type="text" ng-model="greeting" />
+ </div>
+ </div>
+</div>
+
+<script>
+ var HomeCtrl = function($scope) {
+
+ };
+</script>
+```
+
+The outer container div initializes a `greeting` variable to a value of `'Hello, world!'`. Inside this div, there are two rows. The second row has an empty controller associated with it. Its controller has its own scope, and in fact it is a child scope in relation to the scope of the container div.
+
+When the site is run, you should get something like this (styles added):
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/af180bafdf0c-capture01.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/af180bafdf0c-capture01.png)
+
+Note that there is no `greeting` variable declared in the second row (the one with the controller). However, it still showed up, as can bee seen in the image.
+
+## How it Works
+
+The child scope tried to access a `greeting` variable. Since the variable wasn't found in the child scope, it looked to its parent for one. The parent has one, so the child used that in the data binding. This is how AngularJS behaves with inheritance.
+
+If you change the text in the first text box (which is bound to the parent scope's `greeting`), you will see that the child scope will capture this change as well:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bac0cd83c97c-capture02.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bac0cd83c97c-capture02.png)
+
+## Mixing it Up
+
+Things become more interesting when you try to change the second text box, which is bound to the child scope:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c5c1ff49a3e9-capture03.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c5c1ff49a3e9-capture03.png)
+
+The second text box is bound to the child scope's `greeting` variable. Anything that is typed there will reflect in the child scope's variable, and vice versa. Previously, there was no `greeting` variable in the child. But now that there is one, the child will use that from now on, and will no longer look to the parent for one. Consequently, a change to the parent's `greeting` variable will no longer reflect on the child:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/07321a69daa2-capture04.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/07321a69daa2-capture04.png)
+
+Here, we changed the value in the first text box (parent). It did not reflect in the second text box (child), because the child already had its own `greeting` variable. As far as the `greeting` variable is concerned, both scopes now act independently from each other.
+
+In this post we talked about scope inheritance in AngularJS. Understanding scope inheritance will help you avoid pitfalls as well as enable you to write code that takes advantage of this behavior.

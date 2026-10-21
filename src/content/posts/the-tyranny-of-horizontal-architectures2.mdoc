@@ -1,0 +1,193 @@
+---
+title: "The Tyranny of Horizontal Architectures (and How You Might Escape): Part 2"
+description: >-
+  In part 1 of this series , I talked about the pains that I and my colleagues have experienced when working in code bases that used N-tier data-centric architectures. In this post, I will detail one approach which has…
+publishedAt: 2018-07-21
+draft: false
+tags:
+  - writing-code
+githubRepo: https://github.com/ojraqueno/vstemplates
+originalUrl: https://ojdevelops.blogspot.com/2018/07/the-tyranny-of-horizontal-architectures2.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/fd1b3b673b92-the-tyranny-of-horizontal-architectures.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/fd1b3b673b92-the-tyranny-of-horizontal-architectures.jpg)
+
+[In part 1 of this series](/blog/the-tyranny-of-horizontal-architectures/), I talked about the pains that I and my colleagues have experienced when working in code bases that used N-tier data-centric architectures. In this post, I will detail one approach which has allowed me to escape that madness.
+
+## Lasagna Code
+
+We've all heard the term "spaghetti code". But there's also "lasagna code":
+
+> "The object-oriented version of spaghetti code is, of course, 'lasagna code'. Too many layers." - Roberto Waltman
+> 
+> — Programming Wisdom (@CodeWisdom) [February 24, 2018](https://twitter.com/CodeWisdom/status/967451306460884997?ref_src=twsrc%5Etfw)
+
+I use that statement to remind myself that layers can sometimes do more harm than good. That also reflects my experience.
+
+Of course, it's not really the *number* of layers that's the problem, but rather, how the *dependencies* between those layers are set up and what *abstractions* those layers represent.
+
+Consider this familiar diagram of a data-centric N-tier architecture:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7d4d2fc104eb-n-tier-data-centric.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7d4d2fc104eb-n-tier-data-centric.png)
+
+Or even a diagram of a DDD-inspired but still horizontally-designed architecture:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9e2e98158b85-n-tier-ddd.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9e2e98158b85-n-tier-ddd.png)
+
+These are okay architectures, with the domain-centric architecture being preferred over the data-centric one. However, when talking about horizontal layers, they both present the same difficulties.
+
+Whenever you want to make a change, you have to cut across all layers (like a lasagna). If the service / repository classes reflect the database structure, the code you have to write to support non-CRUD actions become complex rather quickly.
+
+I wrote about the pain points in more detail in the first post, so I won't repeat those here. I just shared those images so we can contrast it with the solution I've been using.
+
+## Vertical Slices to the Rescue
+
+In 2015, Jimmy Bogard gave an excellent talk in the NDC Oslo conference entitled "SOLID Architecture in Slices not Layers" that covered this very problem. He shared how he and his colleagues flipped the architecture to something that looks like this:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b00b16d77b85-vertical-slices-jimmy-bogard.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/b00b16d77b85-vertical-slices-jimmy-bogard.png)
+
+Image source: [https://lostechies.com/jimmybogard/2015/07/02/ndc-talk-on-solid-in-slices-not-layers-video-online/](https://lostechies.com/jimmybogard/2015/07/02/ndc-talk-on-solid-in-slices-not-layers-video-online/)
+
+You can view the entire talk [here](https://vimeo.com/131633177). But it can be clearly seen from the diagram that some of prominent horizontal layers, particularly the business logic and data layers, are gone.
+
+In this design, every vertical slice encapsulates a user action, a business requirement. Regardless if that requirement is CRUD or non-CRUD in nature, all of the logic is handled in just one isolated part of the code.
+
+Also, it's important to note that the persistence layer as depicted on the diagram are generic repositories, such as the one provided by Entity Framework via `DbSet<T>` out-of-the-box. There are [no custom repository classes](/blog/why-i-dont-use-repository-pattern-when/) per entity that are shared. That way, changing a vertical slice does not entail change to the repository layer.
+
+Going one step further, the persistence layer could be replaced by an infrastructure layer. The infrastructure layer would contain the generic repositories, and it would also cross-cutting concerns, like logging and email. All of these pieces can then be injected as seen fit to each individual vertical slice.
+
+An important part of this design is that **there are no dependencies between the feature slices**.
+
+## Example implementation
+
+One library I found that really helps implement vertical slices is MediatR. With MediatR, a vertical slice is represented by three classes: a class encapsulating input parameters, a class representing the implementation, and a class representing the output.
+
+I previously wrote in detail about [how to use MediatR](/blog/vertical-slices-with-mediatr-part2/). As a summary, take a look at this example trio of request / response / handler classes, and we will inspect them afterwards:
+
+```csharp
+
+namespace MyAwesomeApp.Products
+{
+ public class Search
+ {
+ public class Query : IRequest<QueryResult>
+ {
+ public int PageNumber { get; set; }
+ public int PageSize { get; set; }
+ }
+
+ public class QueryResult
+ {
+ public IEnumerable<Product> Products { get; set; } = new List<Product>();
+
+ public class Product
+ {
+ public string Name { get; set; }
+ public int Id { get; set; }
+ }
+ }
+
+ public class QueryHandler : IRequestHandler<Query, QueryResult>
+ {
+ private readonly ApplicationDbContext _db;
+
+ public QueryHandler(ApplicationDbContext db)
+ {
+ _db = db;
+ }
+
+ public async Task<QueryResult> Handle(Query query, CancellationToken token)
+ {
+ var products = await _db
+ .Products
+ .OrderBy(p => p.Id)
+ .Skip((1 - query.PageNumber) * query.PageSize)
+ .Take(query.PageSize)
+ .ProjectToListAsync<QueryResult.Product>(); // This is just using AutoMapper to map the entity class to our result class
+
+ return new QueryResult
+ {
+ Products = products
+ };
+ }
+ }
+ }
+}
+```
+
+The request class here is `Query`, the response class is `QueryResult`, and the class that does all the logic is `QueryHandler`. Inside the handler, classes from the infrastructure layer (`ApplicationDbContext` in this case) can be injected.
+
+If and when a need for a domain layer arises, usually to encapsulate common business logic, they can be injected in the handler class as well.
+
+Then, the controller could look something like this:
+
+```csharp
+
+namespace MyAwesomeApp.Products
+{
+ public class ProductsController : Controller
+ {
+ private readonly IMediator _mediator;
+
+ public ProductsController(IMediator mediator)
+ {
+ _mediator = mediator;
+ }
+
+ [HttpGet]
+ public async Task<ActionResult> Search(Search.Query query)
+ {
+ var queryResult = await _mediator.Send(query);
+
+ return Json(queryResult);
+ }
+ }
+}
+```
+
+The dependency injection container could be set up such that MediatR finds the correct handler classes based on the parameter.
+
+What ends up happening is that each controller action's implementation essentially just becomes a call to MediatR's Send command. You automatically get adherence to "thin controllers, fat models" for free, and the controller ends up looking much nicer.
+
+Each controller action gets a corresponding request-response-handler class trio that represents the vertical slice.
+
+## The Differences and Implications
+
+Okay, now to note the differences between that approach and the layered approach.
+
+#### 1\. Domain-Specific Layers are Mostly Gone
+
+The handler class in that example takes the place of what was previously the business logic class and custom repository class. All logic is implemented there.
+
+#### 2\. ...But They Could Come Back If and When Needed
+
+Yes, I know what you're thinking right now: "but what about reuse?"
+
+Going back to the pain points about using layers, one of the tradeoffs of reuse is coupling. When you successfully reuse a method, you also successfully couple all the callers of that method.
+
+Now, that may or may not be a good thing; it depends on the situation. But the beauty of using vertical slices is this: since reuse is not the "default" position, there's less chance of messing it up by introducing bad coupling.
+
+This is a very important point that's worth repeating: **reusable code is written as the need for them is discovered**, and not sooner. Starting with vertical slices essentially means you get adherence to [YAGNI](https://martinfowler.com/bliki/Yagni.html) and [KISS](https://en.wikipedia.org/wiki/KISS_principle).
+
+Perhaps more importantly, the reusable abstractions that eventually get created tend to be the best abstractions needed in that specific domain. This of course is a natural side effect of creating abstractions based on actual need and not just based on what are essentially predictions, however thought-out those predictions may be.
+
+> “Duplication is far cheaper than the wrong abstraction.” [@sandimetz](https://twitter.com/sandimetz?ref_src=twsrc%5Etfw) [@rbonales](https://twitter.com/rbonales?ref_src=twsrc%5Etfw) [pic.twitter.com/zAmc9pvNS4](http://t.co/zAmc9pvNS4)
+> 
+> — bryce (@BonzoESC) [March 7, 2014](https://twitter.com/BonzoESC/status/442003113910603776?ref_src=twsrc%5Etfw)
+
+#### 3\. Representing Non-CRUD Operations, and Any Kind of Operation in General, are So Much Easier to Design
+
+When dealing with non-CRUD operations using entity-centric service / repository classes, you have to spend some amount of brainpower on which class to put the implementation in. This is also something I talked about more fully in part 1 of this series. But when using vertical slices, particularly with the MediatR library, there's really no effort involved: you spin up a request-response-handler trio every single time.
+
+#### 4\. Some Technology Decisions are Easy to Reverse
+
+Here's an example: Suppose you have a repository class (eg. ProductRepository) that uses an ORM under the covers. Now, you find that you need to use raw SQL for one particular action. You can make the change in the particular method in the repository, but if you do, that method will be the odd one out in terms of implementation. All of a sudden, you find the consistency of the class breaking down. This is a [broken window](https://blog.codinghorror.com/the-broken-window-theory/) that may consume the entire project if not addressed.
+
+This, of course, is another example of coupling: technology decisions that are applied across an entire layer. Technology decisions are difficult things to reverse and require much preparatory thought. But when implementations are encapsulated in vertical slices, with each slice being independent from one another, new technologies can be tried in an isolated context without fear of breaking other existing functionality.
+
+## Conclusion
+
+This was the second and final part of my series "The Tyranny of Horizontal Architectures (and How You Might Escape)". The design I've been using to solve the layer madness is to ditch the layers entirely. Instead, I focus on creating isolated vertical slices per feature, utilizing the help of infrastructure classes as necessary. Shared layers are only introduced as the need for them arises.
+
+If you're interested in trying this out, Jimmy Bogard has provided [some example templates](https://github.com/jbogard/ContosoUniversity) on his GitHub site. I'm also working [on my own templates](https://github.com/ojraqueno/vstemplates) that use MediatR.
+
+Give it a shot, and let me know what you think in the comments below!

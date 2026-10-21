@@ -1,0 +1,53 @@
+---
+title: AngularJS and Strongly Typed Views
+description: >-
+  AngularJS is a powerful templating MVC Javascript framework developed by Google. In this post, we will be talking about how to use AngularJS with ASP.NET MVC, particularly with strongly-typed views.
+publishedAt: 2014-01-07
+draft: false
+tags:
+  - net
+  - angularjs
+  - c-sharp
+  - javascript
+  - mvc
+originalUrl: https://ojdevelops.blogspot.com/2014/01/angularjs-and-strongly-typed-views.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/8957fa23c4bf-angularjs-and-strongly-typed-views.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/8957fa23c4bf-angularjs-and-strongly-typed-views.jpg)
+
+AngularJS is a powerful templating MVC Javascript framework developed by Google. In this post, we will be talking about how to use AngularJS with ASP.NET MVC, particularly with strongly-typed views.
+
+## Rendering Strongly-Typed Views in ASP.NET MVC
+
+When a client requests a page in an ASP.NET MVC application, the HTML view is constructed in the server and then sent back to the client. The construction of the view includes, among other things, the initialization of control values.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bbde66198ac9-strongly-typed.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/bbde66198ac9-strongly-typed.png)
+
+## Rendering Views in AngularJS
+
+With AngularJS, the process is different. The rendering is divided into two steps: the first step is getting the template from the server, and the second step is fetching the actual data.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f6da731fb8d5-angular.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f6da731fb8d5-angular.png)
+
+## Strongly Typed Views with AngularJS
+
+When using AngularJS, some benefits of having strongly-typed views are lost. The first is that individual properties can no longer be bound to controls using the lambda syntax. The second is that now there needs to be more than one call to the server in order to render a full view.
+
+One solution would be to declare the angular controller function in the same page as the view. Even though it would still not be possible to have the strongly-typed bindings, the angular controller would at least be able to use values from the model using razor syntax:
+
+```xml
+
+$scope.person = @Html.Encode(Json.Encode(Model))
+```
+
+The drawback of this approach is that the angular controller should be declared in the same page as the view.
+
+Another option would be to use `ng-init` to initialize the client model:
+
+```xml
+
+<div ng-controller="MyCtrl" ng-init="person = @Json.Encode(Model)">
+ ...
+</div>
+```
+
+With this approach, the angular controller can be defined in an external file. The drawback is the reliance on the encoder. In some situations, a custom encoder might have to be used in order to get the desired result.

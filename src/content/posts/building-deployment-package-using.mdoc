@@ -1,0 +1,40 @@
+---
+title: Building a Deployment Package Using Visual Studio 2010
+description: >-
+  Hi, in this post we will be talking about deployment in general and building a deployment package in Visual Studio 2010 in particular.
+publishedAt: 2013-07-19
+draft: false
+tags:
+  - deployment
+  - visual-studio
+originalUrl: https://ojdevelops.blogspot.com/2013/07/building-deployment-package-using.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/cc6cd32b98ad-building-a-deployment-package-using-visual-studio-2010.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/cc6cd32b98ad-building-a-deployment-package-using-visual-studio-2010.jpg)
+
+Hi, in this post we will be talking about deployment in general and building a deployment package in Visual Studio 2010 in particular.
+
+## What is Deployment?
+
+One definition of software deployment is "all of the activities that make a software system available for use". For web applications built using Visual Studio, this usually means copying the needed files to the designated IIS directory.
+
+During development of a web application, you work with classes, views, scripts, and styles. However, not all of these files need to be copied to the IIS directory. Specifically, the dll files are needed instead of the classes and all compiled content. So the final set of files that are needed to proceed with deployment in IIS are dlls + non-compiled content (views, scripts, styles, images, config, etc).
+
+## Building the Deployment Package
+
+It would be tedious to determine one by one which dll's should be copied. Visual Studio makes this step very easy by offering the "Build Deployment Package" feature. Below are the steps on how to build a deployment package:
+
+1\. Make sure that the project builds and that all the needed files are included in the project.
+
+2\. Change the configuration from Debug to Release. This step is optional but recommended.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/85df51922066-deployment_02.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/fb88eef98922-deployment_02.png)
+
+3\. Right click on the project then click "Build Deployment Package".
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/45f082c62a98-deployment_01.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/db4911135594-deployment_01.png)
+
+4\. Visual Studio will then create the necessary files needed for deployment. The default folder where the package is located is at **obj/Release/Package**. The actual files to be copied are further located in the **PackageTmp** folder.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/28bdb11fd320-deployment_03.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/7e86a8ebbc9a-deployment_03.png)
+
+And that's it! Just copy those files into the appropriate IIS directory and you should be able to browse the site.

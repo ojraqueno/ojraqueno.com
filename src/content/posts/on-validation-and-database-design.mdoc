@@ -1,0 +1,52 @@
+---
+title: On Validation and Database Design
+description: >-
+  SQL Server lets us design tables which have constraints and checks in them. Some examples of these constraints / checks are primary key constraints, nullability flags, maximum length flags, and so on. These checks…
+publishedAt: 2016-03-15
+draft: false
+tags:
+  - design
+  - sql-server
+originalUrl: https://ojdevelops.blogspot.com/2016/03/on-validation-and-database-design.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/0747c0735a07-on-validation-and-database-design.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/0747c0735a07-on-validation-and-database-design.jpg)
+
+SQL Server lets us design tables which have constraints and checks in them. Some examples of these constraints / checks are primary key constraints, nullability flags, maximum length flags, and so on. These checks are used to ensure data integrity. Insert, update, and delete commands which will result in an invalid state when executed are not allowed. However, there are some advantages to not using these checks. In this post, we will talk about some of those advantages.
+
+## Business Rules Centralization
+
+The first advantage is what I call Business Rules Centralization. What I mean by this is placing validation checks in as few places as possible.
+
+Usually, the choice of making a field nullable or not or imposing a max length or default value is dictated by business rules. If the application is built well, validation for these rules should already be in place elsewhere in the code, before the data access layer is reached. For example, in an ASP.NET MVC web application, validation can occur in the browser, during model binding, and in the services layer. Updating validation rules means updating validation code in multiple places.
+
+If validation checks are not implemented in the database, then there would be one less place to update whenever validation rules change, increasing centralization.
+
+## Ease of Maintenance
+
+The second advantage is Ease of Maintenance, where "maintenance" means making changes to the code.
+
+To illustrate, suppose there is a non-nullable foreign key relation in the database. Then, the data access layer is implemented with an ORM such as Entity Framework, and the entity objects contain navigation properties in them. For example, a `Car` entity might contain a `Engine` entity, which is implemented as a foreign key relationship in the Cars table in the database. To access a Car's engine, the code would look like `car.Engine`. In the beginning, all cars were modeled to have engines, so the relationship was made to be non-nullable. In addition, all references to `car.Engine` did not have null checks.
+
+Now suppose that the business rules change, and that now, engineless cars need to be modeled (these might represent cars that are in the process of being constructed, or scrapped cars in junkyards). Now, several things need to happen:
+
+1.  The database needs to be updated.
+2.  The code modeling the database needs to be updated.
+3.  All `car.Engine` calls need to be reviewed for possible null reference exception events.
+4.  Related to #3: for all instances, handling should be decided on and new code should be implemented for the null case.
+5.  Validation checks need to be updated.
+
+That can be a lot of work for a simple change of making a non-nullable relationship nullable!
+
+When validation checks are not implemented in the database (that is to say, the relationship was made to be nullable in the database from the very beginning, regardless of the business rules), only the last item above (updating the validation checks) need to be done. The database and the code modeling (points #1 and #2 above) will not change because they don't need to. The calls to `car.Engine` (point #3) do not need to be checked anymore, because (presumably) validation checks have been implemented from the very beginning. This also extends to point #4.
+
+## Encourages Validation in Code
+
+When checks are not present in the database, there is a bigger motivation to implement validation in the code. Validation can take on many forms. One is using simple validation in the code. Another is to use validation frameworks, such as FluentValidation. Yet another \[indirect\] way is the usa of view models. Whatever the case may be, validation code should be implemented more completely in the code base.
+
+## Better User Experience
+
+This is related to the previous point. If, for example, validation checks are implemented in the database but not in the code, users will be greeted with an exception when they try to issue a command that invalidates the database state. If validation checks are present in the code, the developer can control how validation errors are handled (eg. show a friendly error message).
+
+## Conclusion
+
+In this post we talked about some of the advantages of not placing checks / constraints in the database, but rather dealing with them exclusively in the code. Of course, when data integrity is the priority, then checks should implemented in as many places as possible. But in other situations, it might be enough to just put validation checks in the code.

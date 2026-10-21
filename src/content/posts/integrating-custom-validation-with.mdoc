@@ -1,0 +1,173 @@
+---
+title: Integrating Custom Validation with ASP.NET MVC ModelState
+description: >-
+  One common pattern we see in ASP.NET MVC controller actions is a conditional check for ModelState.IsValid , with different branches getting executed based on whether the result is true or false . The ModelState…
+publishedAt: 2016-01-03
+draft: false
+tags:
+  - asp-net
+  - c-sharp
+  - fluent-validation
+  - mvc
+  - validation
+originalUrl: https://ojdevelops.blogspot.com/2016/01/integrating-custom-validation-with.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/57bfb13de215-integrating-custom-validation-with-asp.net-mvc-modelstate.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/57bfb13de215-integrating-custom-validation-with-asp.net-mvc-modelstate.jpg)
+
+One common pattern we see in ASP.NET MVC controller actions is a conditional check for `ModelState.IsValid`, with different branches getting executed based on whether the result is `true` or `false`. The `ModelState` captures errors arising from data annotations such as `Required` and `StringLength`. When there are custom validations that cannot be captured using data annotations, what usually happens is that these validations are checked in the success block of `ModelState.IsValid`. In this post we are going to talk about how to integrate custom validation into `ModelState`.
+
+## Summary
+
+Our end goal is for the ASP.NET MVC framework to pick up the validation classes that we created, run them, and integrate the results into `ModelState`, all happening behind-the-scenes. How do we go about doing this? Here is the summary of steps:
+
+1.  Create validation classes for our viewmodels.
+2.  Register these classes in our dependency injection container.
+3.  Create a custom validation model binder.
+4.  Tell ASP.NET MVC to use the validation model binder instead of the default one.
+
+Let's go through the steps one-by-one.
+
+## Create validation classes for our viewmodels
+
+For this demo, we will be using the following viewmodel:
+
+```csharp
+
+public class RegisterViewModel
+{
+ [Required]
+ public string FirstName { get; set; }
+
+ [Required, EmailAddress]
+ public string Email { get; set; }
+}
+```
+
+Next, we need to implement a validation class. In this post, we will be making use of the FluentValidation library to help us create a validation class:
+
+```csharp
+
+using FluentValidation;
+
+public class RegisterViewModelValidator : AbstractValidator<RegisterViewModel>
+{
+ public RegisterViewModelValidator()
+ {
+ // Here we are just checking that the email is not equal to a dummy value
+ // But you can imagine that we can implement some custom logic here,
+ // such as checking for uniqueness.
+ RuleFor(m => m.Email)
+ .NotEqual("foo@foo.com");
+ }
+}
+```
+
+Of course, we can use any validation class, including other validation libraries or our own validation classes.
+
+## Register these classes in our dependency injection container
+
+What we want to do is to register all implementations of `IValidator<>`. `IValidator<>` is an interface from FluentValidation that is implemented by the `AbstractValidator` class. By registering all the implementations, we will be able to locate the appropriate validator later on when we create our custom validation model binder.
+
+We will be using SimpleInjector as our DI container. The implementation is:
+
+```csharp
+
+public static class SimpleInjectorConfig
+{
+ public static Container Container { get; private set; }
+
+ public static void Initialize()
+ {
+ Container = new Container();
+
+ // Get the assembly where the validation classes are declared in
+ var assemblyOfValidationClasses = Assembly.GetExecutingAssembly();
+
+ // Register all the validation classes
+ Container.Register(typeof(IValidator<>), new[] { assemblyOfValidationClasses });
+
+ // other registration code
+ }
+```
+
+## Create a custom validation model binder
+
+Next, we need to integrate with the ASP.NET MVC pipeline such that the validation class we created gets called automatically. To do this, we create a custom model binder.
+
+We are not replacing any functionality of the `DefaultModelBinder` being used by the ASP.NET MVC framework. Instead, we are just adding functionality. Because of this, we can just inherit from the `DefaultModelBinder` and override its `BindModel` method. Inside our implementation, we will still be calling the `DefaultModelBinder`'s implementation of the `BindModel` method, but then afterwards, we will write additional logic to perform our custom validation.
+
+Here is what our `FluentValidationModelBinder` would look like:
+
+```csharp
+
+public class FluentValidationModelBinder : DefaultModelBinder
+{
+ private readonly IServiceProvider serviceProvider;
+
+ public FluentValidationModelBinder(IServiceProvider serviceProvider)
+ {
+ this.serviceProvider = serviceProvider;
+ }
+
+ public override object BindModel(ControllerContext controllerContext, ModelBindingContext bindingContext)
+ {
+ var model = base.BindModel(controllerContext, bindingContext);
+
+ FluentValidate(bindingContext, model);
+
+ return model;
+ }
+
+ private void FluentValidate(ModelBindingContext bindingContext, object model)
+ {
+ // Get the FluentValidator class that corresponds to the type of the model, if any.
+ var validator = serviceProvider.GetService(typeof(IValidator<>).MakeGenericType(bindingContext.ModelType));
+ if (validator != null)
+ {
+ // Perform validation.
+ var concreteValidator = validator as IValidator;
+ var validationResults = concreteValidator.Validate(model);
+
+ // Add the errors from our validation into the modelstate.
+ if (!validationResults.IsValid)
+ {
+ foreach (var error in validationResults.Errors)
+ {
+ bindingContext.ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+ }
+ }
+ }
+ }
+}
+```
+
+The readonly field and the constructor is there to support constructor injection. The `IServiceProvider` interface is an interface in the ASP.NET MVC framework which is implemented by SimpleInjector's `Container` class. This will let us have access to our dependency injection infrastructure where we have registered our `IValidator<>` validation classes.
+
+In the `BindModel` method, we are calling the base implementation, but then we call our own method before returning the model.
+
+The meat of this class is in the `FluentValidate` method. This is where we try to find the validator associated with the model we are currently binding. If there is an associated validator, we go ahead and perform the validation. If there are any validation errors, we add them to the `ModelState`.
+
+## Tell ASP.NET MVC to use the validation model binder instead of the default one
+
+As a final step, we need to register our `FluentValidationModelBinder`. This can be done in the `Application_Start` method of `Global.asax.cs`:
+
+```csharp
+
+protected void Application_Start()
+{
+ SimpleInjectorConfig.Initialize();
+ ModelBinders.Binders.DefaultBinder = new FluentValidationModelBinder(SimpleInjectorConfig.Container);
+
+ // Other configurations
+}
+```
+
+Notice how we are calling our dependency injection initialization code first. This will make our dependency injection infrastructure available to our `FluentValidationModelBinder`.
+
+Next, we replace the model binder used by ASP.NET MVC with our `FluentValidationModelBinder`. Remember that our `FluentValidationModelBinder` inherits from ASP.NET MVC's `DefaultModelBinder` class and makes use of its implementation of `BindModel`, so we can expect the functionality of the `DefaultModelBinder` to still be there.
+
+And that's it! Now, whenever the framework is in the process of model binding, it will try to look for a validation class. When it finds one, it performs validation and integrates any errors into the `ModelState`. Because of this, the `ModelState.IsValid` check that is typically executed at the beginning of controller actions would contain not only data annotation validation errors but also any validation errors arising from our custom validator class.
+
+## Conclusion
+
+In this post we took a look into how we can tell the ASP.NET MVC framework to perform custom validations and to integrate the results into the `ModelState` automatically. This reduces the need to perform validation checks in the controllers themselves. This is a good example of how the ASP.NET MVC framework can be leveraged to serve our particular needs.

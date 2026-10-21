@@ -1,0 +1,92 @@
+---
+title: Separating Business Rules from Data Access
+description: >-
+  Business rules can be mixed into data access code. This scenario is a violation of the Single Responsibility Principle, because the data access class would have to change if the business rules change. In this post I…
+publishedAt: 2015-03-01
+draft: false
+tags:
+  - net
+  - c-sharp
+  - design
+  - dry
+  - entity-framework
+  - srp
+originalUrl: https://ojdevelops.blogspot.com/2015/02/separating-business-rules-from-dbcontext.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e1abb460bf4a-separating-business-rules-from-data-access.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e1abb460bf4a-separating-business-rules-from-data-access.jpg)
+
+Business rules can be mixed into data access code. This scenario is a violation of the Single Responsibility Principle, because the data access class would have to change if the business rules change. In this post I will show you how to separate the business rules from the data access code.
+
+## Example
+
+An example of data access code using Entity Framework that contains business rules is this:
+
+```csharp
+
+using (var context = new MyContext())
+{
+ var eligibleUsers = context.Users
+ .Where(u => u.EmailVerified);
+}
+```
+
+The content of the `Where` clause is a business rule that defines the condition for eligibility. If the condition changes, the data access class would also change. For example, if the condition for eligibility included having an age value, the code would become::
+
+```csharp
+
+using (var context = new MyContext())
+{
+ var eligibleUsers = context.Users
+ .Where(u => u.EmailVerified &&
+ u.Age != null);
+}
+```
+
+The `Where` clause was changed to reflect the new business rule. Since this code is in the data access class, the data access class will change because of the change of the business rules. What we want is to extract the business rules to a different class.
+
+## Expressions to the Rescue
+
+The content of the `Where` clause takes a parameter of type `Expression<Func<T,bool>>`. Entity Framework uses the `Expression` to create an appropriate SQL query. In the following example, an `Expression` is assigned to a variable and then later used in the `Where` clause:
+
+```csharp
+
+Expression<Func<User, bool>> myExpression = u => u.EmailVerified &&
+ u.Age != null;
+
+...
+
+using (var context = new MyContext())
+{
+ var eligibleUsers = context.Users.Where(myExpression);
+}
+```
+
+Even though the `Expression` type looks fancy, it's the same as any other type and there's no reason why it couldn't be put in another class:
+
+```csharp
+
+public static class UserRules
+{
+ public static Expression<Func<User, bool>> GetEligibilityCriteria()
+ {
+ return u => u.EmailVerified && u.Age != null;
+ }
+}
+```
+
+Which can then be used in the data access code like so:
+
+```csharp
+
+using (var context = new MyContext())
+{
+ var eligibleUsers = context.Users
+ .Where(UserRules.GetEligibilityCriteria());
+}
+```
+
+So now, when the eligibility criteria changes, only the `UserRules` class would change.
+
+## Conclusion
+
+In this post, I showed you how to extract the contents of the `Where` clause in Entity Framework to a different class. This puts a separation between the data access and the business rules classes, enforcing the Single Responsibility Principle. This approach also promotes reusability (DRY) because the business rules could now also be used in other parts of the application (ex: in unit tests).

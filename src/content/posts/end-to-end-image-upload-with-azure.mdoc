@@ -1,0 +1,271 @@
+---
+title: "End-to-End Image Upload with Azure Storage, AngularJS, and Web API"
+description: >-
+  A common feature in web applications is image upload. Images can be stored on disk, in the database, or in some other server. In this post we will take the third approach and store images using Azure Storage. We will…
+publishedAt: 2016-05-19
+draft: false
+tags:
+  - angularjs
+  - azure
+  - c-sharp
+  - web-api
+githubRepo: https://github.com/ojraqueno/webapiimageupload
+originalUrl: https://ojdevelops.blogspot.com/2016/05/end-to-end-image-upload-with-azure.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2781b62b4920-header-end-to-end-image-upload-with-azure-storage-and-angularjs.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/2781b62b4920-header-end-to-end-image-upload-with-azure-storage-and-angularjs.jpg)
+
+A common feature in web applications is image upload. Images can be stored on disk, in the database, or in some other server. In this post we will take the third approach and store images using Azure Storage. We will also be using AngularJS on the front-end and Web API in the back-end.
+
+GET THE CODE
+
+Source code is available at: [https://github.com/ojraqueno/webapiimageupload](https://github.com/ojraqueno/webapiimageupload)
+
+## What is Azure Storage?
+
+Whenever we hear the word "Azure", what typically comes to mind is web hosting, database hosting, or virtual machines. Though those might represent the most common uses cases of Azure (or of cloud technology in general), there are other useful services provided by the Azure platform. One of them is Azure Storage.
+
+Azure Storage enables us to store data on their cloud server for a fee. This data can come in different formats. As of the time of this writing, Azure storage offers five services: Blob Storage, File Storage, Disk Storage, Table Storage, and Queue Storage. For this post, we will be focusing on the Blob Storage service.
+
+For Blob Storage, fees are dependent on how much data is stored and on the number of operations (retrieve, create, put, list, write, transfer) performed on the data. A complete pricing table can be found [here](https://azure.microsoft.com/en-us/pricing/details/storage/), but in general, the prices are very low.
+
+## Activating Azure Storage
+
+How do you take advantage of Azure Storage? The first step is to have an Azure account. If you don't have an Azure account yet, go ahead and create a free account at [https://azure.microsoft.com](https://azure.microsoft.com).
+
+Once you have an Azure account, you can add Azure Storage to our services. Once signed in, follow these steps (using the new portal):
+
+1\. On the left sidebar, click on **New** > **Data + Storage** > **Storage Account**.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/32d54ded6012-add-storage.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/fdfccbbede7f-add-storage.png)
+
+2\. Add a **Name** for your storage account. You will also be forced to create a new resource group or choose an existing one. Let's create a new one, so fill out the **New resource group name**. As for the other items, just leave the defaults for now.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/23b7936ebee8-add-storage-name.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e5902922f394-add-storage-name.png)
+
+3\. Azure will now provision a new resource group and storage account for you. This can take a few minutes (took around 3 minutes for me). Azure will notify you when it's done.
+
+4\. When it's done, on the left sidebar, go to **All resources**, locate the storage account you just created, and click on it. The details of the storage account appears.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c5017b9f0745-new-storage.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6a4d6ad9d26e-new-storage.png)
+
+5\. Don't get overwhelmed by the amount of information you see - we won't need all of them. For now, on the rightmost blade (Settings), click on **Access keys**. Copy and set aside the **Storage account name**, **key1**, and **key2**.
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/01091a2bf6a2-storage-access-keys.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e592a2983549-storage-access-keys.png)
+
+That's it for account setup. Next, we will install the necessary libraries in Visual Studio.
+
+## Getting the Azure SDK
+
+We are going to access Azure Storage from within a web application. To do this, the first step is to download the appropriate Azure Storage NuGet package. In the NuGet Package Manager window, search for **WindowsAzure.Storage** and install it.
+
+Alternatively, you can install it from the Package Manager Console:
+
+```plaintext
+
+Install-Package WindowsAzure.Storage
+```
+
+During installation, click on "I Accept" for any License Acceptance modals that might appear.
+
+How does the SDK know which storage account to connect to? It uses a **storage connection string**. The storage connection string makes use of the storage account name and the key1, which are the values we took note of earlier.
+
+We will store the storage connection string in in the `web.config` file, as an `appSettings` entry. Take note of the format of the value, which includes a **DefaultEndpointsProtocol**, an **AccountName**, and an **AccountKey**:
+
+```xml
+
+<add key="StorageConnectionString" value="DefaultEndpointsProtocol=https;AccountName=YOUR_ACCOUNT_NAME;AccountKey=YOUR_ACCOUNT_KEY" />
+```
+
+Now it's time to start coding. For this post I am using a new Visual Studio Web API project. I also created a new `ApiController`:
+
+```csharp
+
+public class ImageController : ApiController
+{
+ 
+}
+```
+
+We will be building this controller as we go along.
+
+## Using the Azure Storage SDK
+
+The Azure Storage SDK provides several methods that we can use to access our storage account, including methods to upload, download, delete, and more. Before we can use these methods, we must do a little bit of setup code.
+
+For this post, I will be putting the setup code in the controller's constructor. In a real application, it would be better to put the setup code in a class of its own.
+
+But for now, here's the setup code we put inside the `ImageController`:
+
+```csharp
+
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+using System.Configuration;
+using System.Web.Http;
+
+// ... 
+
+public class ImageController : ApiController
+{
+ private readonly CloudBlobContainer blobContainer;
+
+ public ImageController()
+ {
+ var storageConnectionString = ConfigurationManager.AppSettings["StorageConnectionString"];
+
+ var storageAccount = CloudStorageAccount.Parse(storageConnectionString);
+
+ // We are going to use Blob Storage, so we need a blob client.
+ var blobClient = storageAccount.CreateCloudBlobClient();
+
+ // Data in blobs are organized in containers.
+ // Here, we create a new, empty container.
+ blobContainer = blobClient.GetContainerReference("myfirstcontainer");
+ blobContainer.CreateIfNotExists();
+
+ // We also set the permissions to "Public", so anyone will be able to access the file.
+ // By default, containers are created with private permissions only.
+ blobContainer.SetPermissions(new BlobContainerPermissions { PublicAccess = BlobContainerPublicAccessType.Blob });
+ }
+}
+```
+
+We will be storing the `CloudBlobContainer` into a private field because that's what we will be using to upload and download files.
+
+Now let's add an upload method, with the expectation that a single image will be coming from an AngularJS AJAX call:
+
+```csharp
+
+using System.Threading.Tasks;
+using System.Web.Helpers;
+
+// ...
+
+[HttpPost]
+[Route("image/upload")]
+public async Task<IHttpActionResult> Upload()
+{
+ var image = WebImage.GetImageFromRequest();
+ var imageBytes = image.GetBytes();
+
+ // The parameter to the GetBlockBlobReference method will be the name
+ // of the image (the blob) as it appears on the storage server.
+ // You can name it anything you like; in this example, I am just using 
+ // the actual filename of the uploaded image.
+ var blockBlob = blobContainer.GetBlockBlobReference(image.FileName);
+ blockBlob.Properties.ContentType = "image/" + image.ImageFormat;
+
+ await blockBlob.UploadFromByteArrayAsync(imageBytes, 0, imageBytes.Length);
+
+ return Ok();
+}
+```
+
+We are using the `WebImage` helper class to get the image from the request, then using the `UploadFromByteArrayAsync` method to upload the image (in the form of a byte array) into our storage account.
+
+Notice how we are also using a return type of `Task<IHttpActionResult>` instead of just a regular `IHttpActionResult`. That is because we are using the `UploadFromByteArrayAsync` method in the body, which is an `async` method.
+
+Let's leave the backend for now and move to the frontend, where we will be using AngularJS to upload an image.
+
+## Image Upload with AngularJS
+
+There is no built-in directive that knows how to upload images in AngularJS. Fortunately, there are many plugins built by the Angular community for uploading images.
+
+For this post we are going to use **ng-file-upload**, found at [https://github.com/danialfarid/ng-file-upload](https://github.com/danialfarid/ng-file-upload). Install AngularJS first, then ng-file-upload next. Afterwards, reference the following files:
+
+-   angular.js
+-   ng-file-upload.js
+
+We are going to need to add a dependency to the `ngFileUpload` module:
+
+```javascript
+
+var app = angular.module('myApp', ['ngFileUpload']);
+```
+
+We then create a simple angular controller with the `Upload` service injected:
+
+```javascript
+
+app.controller('UploadCtrl', ['$scope', 'Upload', function ($scope, Upload) {
+ $scope.submit = function() {
+ if ($scope.form.file.$valid && $scope.file) {
+ $scope.upload($scope.file);
+ }
+ };
+
+ $scope.upload = function (file) {
+ Upload.upload({
+ url: 'image/upload',
+ data: { file: file }
+ }).then(function (resp) {
+ console.log('Success');
+ }, function (resp) {
+ console.log('Error');
+ }, function (evt) {
+ var progressPercentage = parseInt(100.0 * evt.loaded / evt.total);
+ console.log('progress: ' + progressPercentage + '%');
+ });
+ };
+}]);
+```
+
+The `Upload` service is provided by the ng-file-upload module. It has an `upload` method, which takes an options object, success and error handlers, plus a progress handler.
+
+For now we are not really doing anything significant in the success, error, and progress handlers; we are just logging messages to the console. What is important is the options object that we pass in, because that's where we tell the module what our API url is and what the file is as well.
+
+The `upload` method will take care of formatting the HTTP request correctly to incorporate the image, and will also make the HTTP request to our API url. The default HTTP method is **POST**, though it can be changed to **PUT** by configuration.
+
+Finally, here is the HTML markup:
+
+```xml
+
+<div ng-app="myApp" ng-controller="UploadCtrl">
+ <form name="form">
+ <div class="btn btn-primary"
+ name="file"
+ ngf-select
+ ng-model="file"
+ ngf-pattern="'image/*'"
+ ngf-accept="'image/*'">Select</div>
+ <a href="" class="btn btn-success" ng-click="submit()">Upload</a>
+ </form> 
+</div>
+```
+
+The **ngf-** directives come from the ng-file-upload module, and inject functionality into our div for receiving and handling files. There are many ngf- directives available; we are just using the necessary **ngf-select** directive as well as a couple of others for validation purposes. We are also using some bootstrap CSS classes for styling purposes.
+
+That markup will produce two buttons: a **Select** button and an **Upload** button. The Select button lets you choose the file, and the Upload button begins the actual upload.
+
+Go ahead and try it out!
+
+## Verifying the Upload
+
+Once we have uploaded an image into Azure Storage and set the permissions as Public (as we did above), we should be able to type in the image URL in the browser to view the image.
+
+The general format of a Blob Storage URL is this:
+
+```plaintext
+
+https://<storageaccountname>.blob.core.windows.net/<containername>/<blobname>
+```
+
+In my testing I uploaded a file named "new\_storage\_test\_upload.png". When I called the `GetBlockBlobReference` method, I just used this value. So, the full URL looks like this:
+
+```plaintext
+
+https://ojdevelopsstorage.blob.core.windows.net/myfirstcontainer/new_storage_test_upload.png
+```
+
+To display the image on the screen, we can just use a normal `img` tag:
+
+```plaintext
+
+<img src="https://ojdevelopsstorage.blob.core.windows.net/myfirstcontainer/new_storage_test_upload.png" />
+```
+
+Did it work for you? Congratulations, you have successfully uploaded an image with AngularJS, Web API, and Azure Storage!
+
+## Conclusion
+
+In this post we talked about end-to-end image upload, from the front-end all the way to the back-end to Azure Storage. I hope this helps and good luck with your projects!

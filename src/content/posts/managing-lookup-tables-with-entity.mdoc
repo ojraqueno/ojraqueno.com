@@ -1,0 +1,149 @@
+---
+title: Managing Lookup Tables with Entity Framework Code First
+description: >-
+  Oftentimes in our applications we will have such things as a "lookup table". I am defining a lookup table as a list of relatively fixed or static choices such as status codes, states or provinces, and so on. In this…
+publishedAt: 2016-04-11
+draft: false
+tags:
+  - c-sharp
+  - entity-framework
+  - writing-code
+originalUrl: https://ojdevelops.blogspot.com/2016/04/managing-lookup-tables-with-entity.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f5f05512c43c-managing-lookup-tables-with-entity-framework-code-first.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/f5f05512c43c-managing-lookup-tables-with-entity-framework-code-first.jpg)
+
+Oftentimes in our applications we will have such things as a "lookup table". I am defining a lookup table as a list of relatively fixed or static choices such as status codes, states or provinces, and so on. In this post I will share how I manage lookup tables using Entity Framework.
+
+## Background: The Problem
+
+Let's work with a lookup table of status codes. Often, in an application, there is some logic that is related to the status of some entity, such that doing the same action will produce different results depending on the entity's status. For example, in a banking system, the loan process might be different between regular or VIP customers. In a retail store, the checkout process might be different between members and non-members. In each case, a status check is part of the workflow, and the workflow branches depending on the result of the status check.
+
+Now, suppose that statuses are stored in a lookup table in a database. How can the status be queried reliably and accurately?
+
+## Background: The Common Solution
+
+Often, what I see done is this: in the database, an additional column is created called "code" or similar. The sole purpose of this column is to serve as an identifier in the application: the known "codes" are stored in the application in some data structure such as a dictionary or in a class of constants. The codes doesn't appear on any screen, and the data structure holding the codes are only used during checking.
+
+For example, the database values would look like this:
+
+```plaintext
+
+Id Code Text
+1 NON Non-Member
+2 GLD Gold Member
+3 SVR Silver Member
+```
+
+And then there would be a class of constants that look like this:
+
+```csharp
+
+public class StatusCode
+{
+ public const string NonMember = "NON";
+ public const string GoldMember = "GLD";
+ public const string SilverMember = "SVR";
+}
+```
+
+Which would be used like this:
+
+```csharp
+
+switch (entity.Status.Code)
+{
+ case StatusCode.NonMember:
+ // logic for non-members
+ case StatusCode.GoldMember:
+ // logic for gold members
+ // .. other cases ..
+}
+```
+
+This works, but there are a few downsides / points for improvements that I see:
+
+1.  **The `Status` member has to be brought in to enable a status check.** See how we are drilling into `entity.Status` in the switch statement? That means an additional `JOIN` operation on the database. Just to check the status of an entity.
+2.  **It's a magic string that doesn't really identify a particular row.** Sure, we see a code like "GLD" and kinda infer that it is linked with the gold status. But the link stops there - there is no way in the code to *enforce* the link.
+3.  **It's not directly a domain term.** The code's sole purpose is to serve as an identifier in the code (and as we saw above, it's not even that strong of an identifier). It doesn't appear on any screen, and users of the application don't use these codes. Which may be all fine if the code is a necessity, but, as we will see below, there is a better way.
+
+So what's the better way?
+
+## Use the Primary Key as the Identifier
+
+Yes, you read that right: **just use the primary key as the identifier**. Before I list the "why", let me post some sample code that uses this approach.
+
+The database values would now look like this:
+
+```plaintext
+
+Id Text
+1 Non-Member
+2 Gold Member
+3 Silver Member
+```
+
+The class of constants would now look like this:
+
+```csharp
+
+public class StatusId
+{
+ public const int NonMember = 1;
+ public const int GoldMember = 2;
+ public const int SilverMember = 3;
+}
+```
+
+Which would then be used like this:
+
+```csharp
+
+switch (entity.StatusId)
+{
+ case StatusId.NonMember:
+ // logic for non-members
+ case StatusId.GoldMember:
+ // logic for gold members
+ // .. other cases ..
+}
+```
+
+Now I can list the advantages that I see, which are answers to the disadvantages I listed above:
+
+1.  **The status can be checked directly on the entity, without bringing in the related `Status` object.** We are now directly using the `StatusId` in the entity rather than drilling down to the `Status` object. That is one less `JOIN` that we have to make.
+2.  **We have the strongest possible identifier - it's the primary key.** We really can't get a stronger identifier than that.
+3.  **We have removed our "clutch" column.** Since we are using the primary key as identifier, we don't need an extra column anymore. The database will be less cluttered.
+
+I know what you're thinking now:
+
+## Isn't Having a Strong Coupling with the Primary Key Directly a Bad Idea?
+
+Back in the day, lookup tables are populated with SQL insert commands. If lookup tables have an identity primary key (and they usually do), there was no reliable way to determine beforehand what the generated primary keys would be - you would have to look at those after the insert script ran. Therefore, using codes made sense, as that was something known before the actual insert and is something that could be synchronized with the code.
+
+But when using Entity Framework, particularly the Code First workflow with migrations, insert scripts are no longer necessary. The implementation of migrations also lend itself well to the approach I described of using the primary keys as identifiers.
+
+## Managing Migrations
+
+A very useful method that can be used in migrations is the `AddOrUpdate` method. The `AddOrUpdate` method takes a list of entities as a parameter. For each entity in the list, it adds it to the database if it's not already there, and updates it otherwise. The method also takes in an expression as a parameter, and uses this expression to determine if an entity already exists or not.
+
+How does this fit in with the lookup tables we are discussing?
+
+Well, remember the constants class above, where we had all the ids? Here is how we can use that in migrations:
+
+```csharp
+
+context.Statuses.AddOrUpdate(s => s.Id,
+ new Status { Id = StatusId.NonMember, Text = "Non-Member" },
+ new Status { Id = StatusId.GoldMember, Text = "Gold Member" },
+ new Status { Id = StatusId.SilverMember, Text = "Silver Member" });
+```
+
+Here we are seeding statuses and using the Id as the identifier expression. Notice that we are using the `StatusId` class when constructing the objects - **the same class that we use when checking the statuses**. This gives us a strong guarantee that our identifiers really accurately identify whichever row they're supposed to be able to identify.
+
+**This is an example of embracing the Code First workflow - now we not only using code first for the schema but for the data as well.**
+
+In my opinion, this trumps the approach with the "code" columns I described above.
+
+## Conclusion
+
+In this post I described a solution to lookup table management using Entity Framework Code First and migrations. The solution involves using primary keys directly instead of introducing an arbitrary column (such as a "code" column). This approach ties in nicely with the Code First migrations workflow and provides a very strong means of identification.

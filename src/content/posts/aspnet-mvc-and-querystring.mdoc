@@ -1,0 +1,89 @@
+---
+title: ASP.NET MVC and QueryString
+description: >-
+  In this post I will show you how to post and access query string values using ASP.NET MVC 3.
+publishedAt: 2013-04-22
+draft: false
+tags:
+  - net
+  - asp-net
+  - c-sharp
+  - mvc
+  - querystring
+originalUrl: https://ojdevelops.blogspot.com/2013/04/aspnet-mvc-and-querystring.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6ea32ad652c5-asp.net-mvc-and-querystring.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/6ea32ad652c5-asp.net-mvc-and-querystring.jpg)
+
+In this post I will show you how to post and access query string values using ASP.NET MVC 3.
+
+## Short Introduction to QueryStrings
+
+A query string is a string that is appended to the end of a URL that follows a specific format.
+
+[Caspio](http://howto.caspio.com/parameters/passing-parameters-using-a-query-string.html) provides the following image which clearly explains the query string format:
+
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e4ebb107ef3c-creating_query_strings1.png)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/e4ebb107ef3c-creating_query_strings1.png)
+
+  
+
+As you can see, the beginning of the query string is marked by the **?** character. After that, each parameter-value pair is represented by the parameter name followed by an equal sign followed by the parameter value (ex: ?name=john). Different parameter-value pairs are separated by the **&** character (ex: ?name=john&age=30).
+
+Let's create a project that uses these query strings.
+
+## Server-Side Setup
+
+First, create an MVC 3 internet application. In the HomeController class, create the following action and the corresponding view:
+
+```csharp
+
+public ActionResult AwesomeAction(int? intParam, string stringParam)
+{
+ return View();
+}
+```
+
+This action is enough to get the values from the query string. Note that there is no need to access the **Request.QueryString** collection anymore (although you can certainly do that if you want to). Instead, the query string values are mapped directly to the action parameters.
+
+## Client-Side Setup
+
+Now that we have the server ready to accept incoming requests with an appended query string, let's create a link that does that for us.
+
+In the Index view, insert the following code in the body tag:
+
+```xml
+
+<p>
+ intParam: 3
+ stringParam: "test"
+ @Html.ActionLink("Go to Awesome Action", "AwesomeAction", new { intParam = 3, stringParam = "test" })
+</p>
+```
+
+In line 4 you can see that we are using an action link. The first parameter is the link text and the second parameter is the action name.
+
+The third parameter is the **routeValues object**. It is this object that becomes the query string. In our example, the generated query string will have two parameters: intParam (with a value of 3) and stringParam (with a value of "test").
+
+Go ahead and debug the project. Once you see the Index page, click on the "Go to Awesome Action" link. From there you should be taken to a blank white page. Notice, however, that in the address bar the link is in the query string format, which looks something like this:
+
+```plaintext
+
+http://localhost:7313/Home/AwesomeAction?intParam=3&stringParam=test
+```
+
+This demonstrates that the **routeValues** became the query string, and the correct format was automatically applied.
+
+Now go ahead and debug the solution and place a breakpoint at the AwesomeAction action. If you hover over the intParam and stringParam, you will notice that they have been populated with the values of 3 and "test" respectively. This shows that the query string was recognized by the server and they were automatically mapped to the action parameters.
+
+## Important!
+
+In my experience working with query strings I have discovered a couple of things that might help you in your own work.
+
+**1\. Use nullable parameters.** In our example above, notice how we set the type of intParam as int? rather than int. The reason for this is to allow us to access the AwesomeAction even without the query string specified.
+
+Go ahead and try going to the AwesomeAction method without using the query string. You will find that the method still works, however the values for the intParam and stringParam are both null.
+
+Now try doing that again, but this time change the intParam type from int? to just int. The page will now throw an error. This is because the AwesomeAction action is expecting an int parameter, but nothing was supplied.
+
+**2\. The query string name is not case-sensitive.** The query string will still work even if the case of the parameter name in the client is different from the case of the parameter name in the server. For example, if in the client you have "InTpArAm = 3" as one of the routeValues and in the controller the corresponding parameter is "int? INTPARAM", you will find that the server will still be able to get the correct value.
+
+That's it! Good luck in your project and I hope this post helped you out.

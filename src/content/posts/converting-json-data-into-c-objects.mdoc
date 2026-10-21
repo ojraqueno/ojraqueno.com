@@ -1,0 +1,241 @@
+---
+title: "Converting JSON Data Into C# Objects"
+description: >-
+  There are times when we would need to convert JSON string data into C# objects. An example would be when consuming some Web API that returns JSON data. Although we can work with the JSON string data directly, it…
+publishedAt: 2016-05-12
+draft: false
+tags:
+  - c-sharp
+  - json
+originalUrl: https://ojdevelops.blogspot.com/2016/05/converting-json-data-into-c-objects.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c6cd54c52601-converting-json-data-into-c-sharp-objects.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c6cd54c52601-converting-json-data-into-c-sharp-objects.jpg)
+
+There are times when we would need to convert JSON string data into C# objects. An example would be when consuming some Web API that returns JSON data. Although we can work with the JSON string data directly, it would be much nicer if we could somehow convert the data into an object, so that we can work with them more easily. In this post we will talk about how to do this.
+
+## JSON.NET
+
+In order to achieve this goal, we will make use of a wonderful library called **JSON.NET**. JSON.NET provides a host of functionalities that enable us to deal with JSON data easily. It is so useful that it has become the default JSON library in the newer ASP.NET MVC web application templates.
+
+In order to install JSON.NET, go to "Manage NuGet Packages..." and search for JSON.NET or Newtonsoft.JSON. You can also install it through the Package Manager Console:
+
+```plaintext
+
+Install-Package Newtonsoft.Json
+```
+
+## Converting Simple JSON Data
+
+Let's say we have this simple JSON file:
+
+```javascript
+
+{
+ "firstName": "John",
+ "lastName": "Smith",
+ "age": 40
+}
+```
+
+How do we turn it into a C# object?
+
+The first step is to create a class with the corresponding properties and data types. In the sample JSON data, we see that the `firstName` and `lastName` are string values, and that the `age` is an integer value.
+
+A corresponding class would look something like this:
+
+```csharp
+
+public class Person
+{
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+ public int Age { get; set; }
+}
+```
+
+Now, how can we convert the JSON data into an instance of the `Person` class?
+
+This is where the JSON.NET library comes in. The library has a useful method called `DeserializeObject` that easily lets us convert a JSON string into an instance of a C# class. The `DeserializeObject` has a generic overload which takes the target C# class type, and whose parameter is the JSON string data.
+
+Below is a code snippet for converting our sample JSON data, written in a console application:
+
+```csharp
+
+var json =
+@"{
+ ""firstName"": ""John"",
+ ""lastName"": ""Smith"",
+ ""age"": 40
+}";
+
+var person = JsonConvert.DeserializeObject<Person>(json);
+```
+
+And that's it, we have converted the data successfully!
+
+Notice how the properties were populated successfully, even when the JSON keys are in camel case while the class properties are in pascal case. The deserializer is smart enough to handle this scenario, which is great because JSON data keys often are not in pascal case format.
+
+## Embedded Objects
+
+Now, not all JSON data has that simple of a structure. Sometimes, embedded objects are present in the payload. To extend our example, let's say that the JSON data contained an address object, like so:
+
+```javascript
+
+{
+ "firstName": "John",
+ "lastName": "Smith",
+ "age": 40,
+ "address": {
+ "street": "123 Test Street",
+ "state": "CA",
+ "postCode": 90210
+ }
+}
+```
+
+How can we convert this kind of data?
+
+The answer is to first create an `Address` class that represents the embedded address object, and then include that as a property in the original `Person` class.
+
+Here is what the `Address` class might look like:
+
+```csharp
+
+public class Address
+{
+ public string Street { get; set; }
+ public string State { get; set; }
+ public int PostCode { get; set; }
+}
+```
+
+Now we need to include that as a property in the `Person` class and give it an appropriate matching name:
+
+```csharp
+
+public class Person
+{
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+ public int Age { get; set; }
+ public Address Address { get; set; } // Added new property!
+}
+```
+
+We don't have to do anything else at this point. The converter method will be able to see the embedded JSON object and see our `Address` class and make everything work.
+
+Here is the updated code snippet:
+
+```javascript
+
+var json =
+@"{
+ ""firstName"": ""John"",
+ ""lastName"": ""Smith"",
+ ""age"": 40,
+ ""address"": {
+ ""street"": ""123 Test Street"",
+ ""state"": ""CA"",
+ ""postCode"": 90210
+ }
+}";
+
+var person = JsonConvert.DeserializeObject<Person>(json);
+```
+
+## Collections
+
+JSON data can also contain arrays. Extending our sample a bit further, let's say that we include some languages and pets into the mix:
+
+```javascript
+
+{
+ "firstName": "John",
+ "lastName": "Smith",
+ "age": 40,
+ "address": {
+ "street": "123 Test Street",
+ "state": "CA",
+ "postCode": 90210
+ },
+ "languages": [ "English", "French" ],
+ "pets": [
+ {
+ "name": "Spark",
+ "type": "dog"
+ },
+ {
+ "name": "Fluff",
+ "type": "cat"
+ }
+ ]
+}
+```
+
+How can we convert this kind of data?
+
+The solution is straightforward: we introduce collection properties into the `Person` class. To capture the languages, we introduce a collection of `string`s as a property. To capture the pets, we first create a matching `Pet` class then introduce a collection of `Pet` objects as a property.
+
+Which collection types are supported? I haven't tried all collection types, but I found that `IEnumerable<>` is supported. Most of the time, this is enough, so we are going to use this type in our demonstration. Feel free to experiment with different collection types according to your needs.
+
+Let's create the `Pet` class now:
+
+```csharp
+
+public class Pet
+{
+ public string Name { get; set; }
+ public string Type { get; set; }
+}
+```
+
+And then we modify the `Person` class to include the new collection properties:
+
+```csharp
+
+public class Person
+{
+ public string FirstName { get; set; }
+ public string LastName { get; set; }
+ public int Age { get; set; }
+ public Address Address { get; set; }
+ public IEnumerable<string> Languages { get; set; } // For capturing the languages
+ public IEnumerable<Pet> Pets { get; set; } // For capturing the pets
+}
+```
+
+The rest of the code remains the same.
+
+Here is the update code snippet:
+
+```csharp
+
+var json =
+@"{
+ ""firstName"": ""John"",
+ ""lastName"": ""Smith"",
+ ""age"": 40,
+ ""address"": {
+ ""street"": ""123 Test Street"",
+ ""state"": ""CA"",
+ ""postCode"": 90210
+ },
+ ""languages"": [ ""English"", ""French"" ],
+ ""pets"": [
+ {
+ ""name"": ""Spark"",
+ ""type"": ""dog""
+ },
+ {
+ ""name"": ""Fluff"",
+ ""type"": ""cat""
+ }
+ ]
+}";
+
+var person = JsonConvert.DeserializeObject<Person>(json);
+```
+
+## Conclusion
+
+In this post we talked about how to convert JSON data into instances of C# objects. We made use of the JSON.NET library to achieve this using a single method. We also saw how to handle JSON objects and arrays.

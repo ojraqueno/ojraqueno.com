@@ -1,0 +1,104 @@
+---
+title: "How to Read Text Files Using C#"
+description: >-
+  Hello, in this post I will show you how to read text files line-by-line using C#.
+publishedAt: 2013-04-27
+draft: false
+tags:
+  - net
+  - c-sharp
+  - io
+originalUrl: https://ojdevelops.blogspot.com/2013/04/how-to-read-text-files-using-c.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c47b00a20fb4-how-to-read-text-files-using-c-sharp.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/c47b00a20fb4-how-to-read-text-files-using-c-sharp.jpg)
+
+Hello, in this post I will show you how to read text files line-by-line using C#.
+
+## Setting Up and Running the Code
+
+Let's say that you have a text file named "test.txt" with the following contents:
+
+```plaintext
+
+I am a simple
+text file with
+three lines.
+```
+
+We can read the contents of the file using the following code. Note that I am using a console application.
+
+```csharp
+
+string file = "file.txt";
+using (TextReader reader = new StreamReader(file))
+{
+ string allLines = reader.ReadToEnd();
+ Console.WriteLine(allLines);
+}
+```
+
+And it produces the following output in the console:
+
+```plaintext
+
+I am a simple
+text file with
+three lines.
+```
+
+As you can see, the file contents have been replicated in the console.
+
+## How It Works
+
+The first thing to notice is the file name. Notice that I did not put a directory in specifying the file name. In the case of a console application, the default directory would be **bin\\Debug**. Usually, the full path is specified.
+
+Now let's look at the following line:
+
+```csharp
+
+using (TextReader reader = new StreamReader(file))
+{
+ // code body
+}
+```
+
+This is the part where the program opens the file.
+
+The **TextReader** is the abstract base class of **StreamReader**. One of the **StreamReader** constructors takes the file path as an argument, and that is the one we are using here.
+
+The **using** statement creates a scope for the **StreamReader**. As a rule, when using an **IDisposable** object, you should declare and instantiate it in a **using** statement. The **using** statement calls the **Dispose** method on the object in the correct way, and it also causes the object itself to go out of scope as soon as **Dispose** is called.
+
+Finally, it is the following lines that actually read the contents of the file and display it to the console:
+
+```csharp
+
+string allLines = reader.ReadToEnd();
+Console.WriteLine(allLines);
+```
+
+## Reading a File Line-by-Line
+
+A common use case is to read the file line-by-line and store the contents into a collection, such as a **List<string>**. To achieve this, the **ReadLine** method needs to be used:
+
+```csharp
+
+string file = "file.txt";
+List<string> contents = new List<string>();
+using (TextReader reader = new StreamReader(file))
+{
+ string line;
+ while ((line = reader.ReadLine()) != null)
+ {
+ contents.Add(line);
+ }
+}
+
+foreach (string lineContent in contents)
+{
+ Console.WriteLine(lineContent);
+}
+```
+
+The **ReadLine** method reads only one line at a time. If no further lines are read, it returns **null**. The preceding snippet will yield the same results as before.
+
+That's it, see you next time!

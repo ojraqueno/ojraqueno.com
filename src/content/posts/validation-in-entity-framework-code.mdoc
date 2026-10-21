@@ -1,0 +1,76 @@
+---
+title: Validation in Entity Framework Code First
+description: >-
+  Entity framework code first has support for validation for frequent validation scenarios. In this post, we will look at a couple of ways on how this can be achieved.
+publishedAt: 2013-10-23
+draft: false
+tags:
+  - c-sharp
+  - entity-framework
+  - validation
+originalUrl: https://ojdevelops.blogspot.com/2013/10/validation-in-entity-framework-code.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9ad339692ffa-validation-in-entity-framework-code-first.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9ad339692ffa-validation-in-entity-framework-code-first.jpg)
+
+Entity framework code first has support for validation for frequent validation scenarios. In this post, we will look at a couple of ways on how this can be achieved.
+
+If you are new to Entity framework code first, you might want to check out my post on [entity framework quick start.](/blog/entity-framework-code-first-quick-start/).
+
+There are two ways on how to do the validation: through **data annotations** and through the **fluent API**.
+
+## Using Data Annotations
+
+Let's say that we have a `Person` entity with the following declaration:
+
+```csharp
+
+public class Person
+{
+ public string Name { get; set; }
+
+ // other properties
+}
+```
+
+By default, no validation is applied to its properties. `Name` can be null, empty, or can have any length.
+
+What if you want to set the `Name` to required? You can just update the model like so:
+
+```csharp
+
+using System.ComponentModel.DataAnnotations;
+
+public class Person
+{
+ [Required]
+ public string Name { get; set; }
+
+ // other properties
+}
+```
+
+With the **\[Required\]** attribute, entity framework will check that the `Name` field has a value before doing in insert or update. If validation fails, an exception will be thrown when calling `SaveChanges`.
+
+## Using the Fluent API
+
+An alternative way to configure the property is through the **Fluent API**. Following is the fluent API code that achieves the same effect (setting the `Name` property to required):
+
+```csharp
+
+public class MyContext : DbContext
+{
+ public DbSet<Person> People { get; set; }
+
+ protected override void OnModelCreating
+ (DbModelBuilder modelBuilder)
+ {
+ Entity<Person>().Property(p => p.Name).IsRequired();
+ }
+
+ // other members
+}
+```
+
+Notice that this time around, we are overriding a `DbContext` method called **OnModelCreating**. The fluent API call appears inside this method, which reads: "for the Person entity, set the Name property as required."
+
+There is also one more effect of configuring property validations when using either data annotations or the fluent API. When entity framework creates the database, any `string` property will automatically be mapped to columns that are nullable (`null`). However, when marking a property as `Required`, the associated column will be made `not null`.

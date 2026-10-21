@@ -1,0 +1,62 @@
+---
+title: Implementing a Reusable Validation Framework
+description: >-
+  Validation is an ubiquitous process in all web applications. In this post we will talk about implementing part of a simple validation framework that can be reused in any application.
+publishedAt: 2013-07-10
+draft: false
+tags:
+  - net
+  - c-sharp
+  - validation
+originalUrl: https://ojdevelops.blogspot.com/2013/07/implementing-reusable-validation.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9b43fc3306bf-implementing-a-reusable-validation-framework.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/9b43fc3306bf-implementing-a-reusable-validation-framework.jpg)
+
+Validation is an ubiquitous process in all web applications. In this post we will talk about implementing part of a simple validation framework that can be reused in any application.
+
+## Required Field Validation
+
+One of the most common types of validation is **Required** validation. In this type of validation, a property is checked if it contains a value or not. Properties with values are considered valid while those with null or default values are invalid.
+
+Following is a simple implementation of a Required Field validator method:
+
+```csharp
+
+public bool Validate<TObject, TProperty>(TObject obj, Expression<Func<TObject, TProperty>> selector)
+{
+ bool isValid = true;
+
+ TProperty value = selector.Compile().Invoke(obj);
+ TProperty defaultValue = default(TProperty);
+
+ if (Object.Equals(value, defaultValue) || String.IsNullOrWhiteSpace(Convert.ToString(value)))
+ {
+ isValid = false;
+ }
+
+ return isValid;
+}
+```
+
+That function takes an object and a **lambda expression** to determine the strongly typed property that it should check.
+
+It can be used like this:
+
+```csharp
+
+User myUser = new User
+{
+ Username = "john"
+};
+bool hasValidUsername = Validate(myUser, u => u.Username);
+```
+
+## How it Works
+
+The function is a generic method with two generic parameters: the type of the containing object and the type of the property being checked. Then, the first actual parameter is the instance of the containing object, while the second is a lambda expression selector. The signature of the selector is similar to the HtmlHelper methods used in strongly-typed MVC views.
+
+The implementation is pretty straightforward. First, the actual value of the property described by the selector is retrieved. Then, the default value for the property type is determined. There is an additional check if the property is a string because we are defining empty or whitespace strings as invalid as well. Finally, the two values are compared and if they are equal, it means that the input is invalid.
+
+This simple implementation can easily be extended. For instance, instead of a boolean value, a custom validation result object can be returned. In addition, an error message can be included in the result.
+
+Other types of validation (length, regex, etc) can use a similar signature. This promotes consistency in the application. The end result is easier maintenance and better readability. But I believe one of the most important benefits of this approach is reusability, since validation methods like this can be reused for different object types.

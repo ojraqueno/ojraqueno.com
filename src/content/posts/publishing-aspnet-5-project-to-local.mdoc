@@ -1,0 +1,81 @@
+---
+title: Publishing an ASP.NET 5 Project to a Local IIS Server
+description: >-
+  Recently I deployed a new ASP.NET 5 web application to a local IIS server. Though there are several online resources available about deployment, I encountered some problems that were difficult to diagnose and fix. In…
+publishedAt: 2016-02-06
+draft: false
+tags:
+  - asp-net-5
+  - deployment
+  - iis
+originalUrl: https://ojdevelops.blogspot.com/2016/02/publishing-aspnet-5-project-to-local.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/43ece15cf506-publishing-an-asp.net-5-project-to-a-local-iis-server.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/43ece15cf506-publishing-an-asp.net-5-project-to-a-local-iis-server.jpg)
+
+Recently I deployed a new ASP.NET 5 web application to a local IIS server. Though there are several online resources available about deployment, I encountered some problems that were difficult to diagnose and fix. In this post I will talk about the general deployment process and the steps I followed for a successful deployment.
+
+## Summary
+
+ASP.NET 5 applications are meant to be cross-platform. Included in this cross-platform effort is the development of a new, cross-platform web server, named Kestrel. The Kestrel web server can be activated from the command line and can be used on any operating system.
+
+Of course, ASP.NET 5 applications can still be hosted in IIS. But even in this case, the underlying web server will still be Kestrel. The role of IIS is greatly minimized.
+
+In this post we will be deploying a web application using Kestrel as a web host first. Afterwards, we will be deploying to IIS.
+
+## Deployment to Kestrel
+
+Let's say that we have an existing ASP.NET 5 application. We can publish the application from the command line. First, navigate to the root web folder of the application (the folder where the `project.json` file is in). Then, type in the following command:
+
+```plaintext
+
+dnu publish --runtime active -o ..\publish
+```
+
+What this will do is create a new folder named 'publish' alongside the root web folder. Inside this 'publish' folder , there will be three subfolders: 'approot', 'logs', and 'wwwroot'. The 'approot' folder will contain the source files and packages needed by the application. The 'logs' folder will contain any logs that the application emits. The 'wwwroot' folder will contain javascript, html, css files, etc. as well as the web.config file.
+
+Now we can start the Kestrel web server. First, navigate to the 'approot' folder. There will be a file named `web.cmd`. Start it by typing 'web' from the command line or double-clicking on it from a windows explorer window.
+
+You might notice that a lot of text appears on the command line as soon as the command is run. This is especially true when there are Entity Framework migrations involved. Among the sea of text, the URL of the localhost web server will be displayed, and will look something like this:
+
+```plaintext
+
+Hosting Environment: Production
+Now listening on: http://localhost:5000
+Application started. Press Ctrl+C to shut down.
+```
+
+Once we find this text, we can just navigate to the appropriate URL using a browser. There we should see the web app up and running.
+
+Congratulations, we have just deployed our ASP.NET 5 web application!
+
+## Deployment to IIS
+
+Once we successfully launch the app through Kestrel, we can go for deploying in IIS. We need to do a few things for it to work properly.
+
+-   Use an application pool with `No Managed Code` as the .NET CLR Version.
+-   Create a Login in SQL Server with the login name as `IIS APPPOOL\{apppoolname}`. This Login should have access to whatever database the web application will use.
+-   Create access rights to the 'wwwroot' folder for the user group `IIS_IUSRS`.
+
+In addition, if we are going to put the application inside IIS `Default Web Site` and use a virtual directory, we need to modify the `Startup.cs` to handle this.
+
+The first step is to rename the `Configure` method to something else, for example `Configure1`.
+
+Then, we need to create a new `Configure` method. This would have the same signature as the original Configure method. The implementation would look something like this:
+
+```csharp
+
+public async void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+{
+ app.Map("/virtualdirectoryname", (app1) => this.Configure1(app1, env, loggerFactory));
+}
+```
+
+So we see that this new `Configure` method just calls the `Configure1` method, taking into account the virtual directory name.
+
+Once all of these are in place, we can go ahead and deploy to IIS using the usual process. We can add a new application in IIS Default Web Site and use the application pool we created earlier (using `No Managed Code`). The physical path should point to the 'wwwroot' location. The alias should be the same as the one we put in the `Configure` method in `Startup.cs`.
+
+Afterwards, just browse to the website and it should all be good!
+
+## Conclusion
+
+Although the concept of deployment stayed the same, the process and tools involved for deploying ASP.NET 5 applications has changed. In this post we took a look at how to deploy to the Kestrel web server, then later to IIS. Though it might seem like a long process, most of the steps should only be performed the first time around. Subsequent deployments should be faster and more straightforward.

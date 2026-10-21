@@ -1,0 +1,109 @@
+---
+title: Using NLog to Log to a Database with Entity Framework Code First
+description: >-
+  NLog is a logging framework that is used to add logging capabilities to a .NET application. Today I am going to show how to use NLog to generate logs on a database created by Entity Framework Code First.
+publishedAt: 2015-01-24
+draft: false
+tags:
+  - net
+  - c-sharp
+  - entity-framework
+  - nlog
+originalUrl: https://ojdevelops.blogspot.com/2015/01/using-nlog-to-log-to-database-with.html
+---
+[![](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/a86f63900d6b-using-nlog-to-log-to-a-database-with-entity-framework-code-first.jpg)](https://pub-4554d0a898c2418f8c8a64458c42d6fa.r2.dev/posts/a86f63900d6b-using-nlog-to-log-to-a-database-with-entity-framework-code-first.jpg)
+
+[NLog](http://nlog-project.org/) is a logging framework that is used to add logging capabilities to a .NET application. Today I am going to show how to use NLog to generate logs on a database created by Entity Framework Code First.
+
+The version of NLog used here is NLog 3.2.0.
+
+## Summary
+
+Say you have an existing solution that:
+
+-   Already has a database context.
+-   Already has NLog installed.
+-   Already has the NLog config file added.
+
+Enabling NLog logging to the database consists of the following steps:
+
+1.  Create the entity that represents the log entry and update the database appropriately.
+2.  Configure NLog to log to the database table that holds the log entries.
+
+## Create the entity that represents the log entry and update the database appropriately
+
+This is no different than adding a normal business entity. In this tutorial I will use a `LogEntry` class that looks like this:
+
+```csharp
+
+public class LogEntry
+{
+ public string CallSite { get; set; }
+ public string Date { get; set; }
+ public string Exception { get; set; }
+ public int Id { get; set; }
+ public string Level { get; set; }
+ public string Logger { get; set; }
+ public string MachineName { get; set; }
+ public string Message { get; set; }
+ public string StackTrace { get; set; }
+ public string Thread { get; set; }
+ public string Username { get; set; }
+}
+```
+
+This will create a `LogEntries` table with an `Id` primary key identity column. The rest of the fields would have types of `nullable nvarchar(max)`. Of course, this can be modified through configuration.
+
+## Configure NLog to log to the database table that holds the log entries
+
+Now it's time to tell NLog to log to the database we created. We can use the connection string name to achieve this. Let's say we have a connection string like this:
+
+```xml
+
+<connectionStrings>
+ <add name="MyContext" connectionString="Server=.\SQLEXPRESS;Database=myDatabase;Trusted_Connection=True;Connection Timeout=30;" providerName="System.Data.SqlClient" />
+</connectionStrings>
+```
+
+The NLog.config file can look like this:
+
+```xml
+
+<?xml version="1.0" encoding="utf-8" ?>
+<nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+ <targets async="true">
+ <target xsi:type="Database"
+ name="database"
+ connectionStringName="MyContext"
+ commandText="INSERT INTO [dbo].[LogEntries] ([CallSite], [Date], [Exception], [Level], [Logger], [MachineName], [Message], [StackTrace], [Thread], [Username]) VALUES (@CallSite, @Date, @Exception, @Level, @Logger, @MachineName, @Message, @StackTrace, @Thread, @Username);">
+ <parameter name="@CallSite" layout="${callsite:filename=true}" />
+ <parameter name="@Date" layout="${longdate}" />
+ <parameter name="@Exception" layout="${exception}" />
+ <parameter name="@Level" layout="${level}" />
+ <parameter name="@Logger" layout="${logger}" />
+ <parameter name="@MachineName" layout="${machinename}" />
+ <parameter name="@Message" layout="${message}" />
+ <parameter name="@StackTrace" layout="${stacktrace}" />
+ <parameter name="@Thread" layout="${threadid}" />
+ <parameter name="@Username" layout="${windows-identity:domain=true}" />
+ </target>
+ </targets>
+ <rules>
+ <logger name="*" minlevel="Info" writeTo="database" />
+ </rules>
+</nlog>
+```
+
+Notice how:
+
+-   The `async="true"` attribute was used in the `targets` element. This enables async logging.
+-   The `connectionStringName` is used instead of the actual connection string. This means that if we have different connection strings for debug or release modes, NLog will use the appropriate connection string.
+-   A hard-coded `INSERT` statement is used. It's not likely that the `LogEntry` entity will change, but if it does, the statement here should be updated as well.
+
+Using this setup, log entries will get persisted to the database.
+
+**Update:** If pluralizations are turned off, the name of the database table will be `LogEntry` instead of `LogEntries`. Make sure that the correct name is reflected in the config file.
+
+## Conclusion
+
+In this post I showed how to use NLog to log to a database that was created using Entity Framework Code First. I was actually surprised that the setup process was simple and straightforward. I hope this will help you in your projects.
