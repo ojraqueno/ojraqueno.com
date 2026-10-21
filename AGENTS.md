@@ -8,6 +8,10 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+## Writing
+
+When drafting or rewriting blog posts, follow `.cursor/skills/oj-writing-style/SKILL.md`.
+
 ## Documentation
 
 Full documentation: https://docs.astro.build
